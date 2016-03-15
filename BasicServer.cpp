@@ -155,8 +155,10 @@ void handle_get(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** GET " << path << endl;
   auto paths = uri::split_path(path);
+  unordered_map<string,string> json_body {get_json_body (message)};
+
   // Need at least a table name
-  if (paths.size() < 1) {
+  if (paths.size()!=1 && paths.size()!=3) {
     message.reply(status_codes::BadRequest);
     return;
   }
@@ -167,8 +169,37 @@ void handle_get(http_request message) {
     return;
   }
 
+    //GET all entities with specific properties
+  if (paths.size() == 1 && json_body.size()>0) {
+      table_query query {};
+      table_query_iterator end;
+      table_query_iterator it = table.execute_query(query);
+      vector<value> key_vec;
+      vector<value> spec_vec;
+      while (it != end) {
+        cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
+        prop_vals_t keys {
+          make_pair("Partition",value::string(it->partition_key())),
+          make_pair("Row", value::string(it->row_key()))};
+        keys = get_properties(it->properties(), keys); 
+        int counter {0};
+        for(const auto v:json_body){
+          for(auto i = keys.begin();i!=keys.end();i++ ){  
+            if((*i).first == v.first){
+              counter++;  
+            }
+          }  
+        }
+        ++it;
+        if(counter == json_body.size())
+            key_vec.push_back(value::object(keys)); 
+      }
+      message.reply(status_codes::OK, value::array(key_vec));
+      return;
+    }
+
   // GET all entries in table
-  if (paths.size() == 1) {
+  if (paths.size() == 1 ) {
     table_query query {};
     table_query_iterator end;
     table_query_iterator it = table.execute_query(query);
@@ -204,6 +235,8 @@ void handle_get(http_request message) {
     message.reply(status_codes::OK, value::object(values));
   else
     message.reply(status_codes::OK);
+
+
 }
 
 /*
