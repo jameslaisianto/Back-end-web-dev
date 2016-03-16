@@ -253,6 +253,48 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, result.first);
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
   }
+
+  // // A test of GET all table entries with specific properties
+  // TEST_FIXTURE(GetFixture, GetAllProp){
+  //   string partition {"Sheen,Charlie"};
+  //   string row {"USA"};
+  //   string property {"problem"};
+  //   string prop_val {"drugs"};
+  //   int put_result {put_entity(GetFixture::addr, GetFixture::table, partition, row, property,prop_val)};
+  //   cerr << "put result " << put_result << endl;
+  //   assert (put_result ++ status_codes::OK);
+
+  //   pair<status_code,value> result {
+  //     do_request (methods::GET,
+  //       string(GetFixture::addr)
+  //       +_string(GetFixture::table)+)
+  //   }
+  // }
+
+TEST_FIXTURE(GetFixture, GetProperty) {
+    string partition {"Edmund"};
+    string row {"Ottawa"};
+    string property {"Born"};
+    string prop_val {"2000"};
+    int put_result {put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val)};
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    pair<status_code,value> result {
+      do_request (methods::GET,
+      string(GetFixture::addr)
+      + string(GetFixture::table)
+      , value::object (vector<pair<string,value>>
+            {make_pair("Born", value::string("*"))})
+      )};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    //CHECK_EQUAL(2, result.second.as.array().size());
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    
+  }
+
+
+
 }
 
 /*

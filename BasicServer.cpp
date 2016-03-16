@@ -218,27 +218,28 @@ void handle_get(http_request message) {
   }
 
   //GET all entities from a specific partition
-  if (paths.size() == 3) {
-    if (paths[2].compare("*") == 0) {
-      table_query query {};
-      table_query_iterator end;
-      table_query_iterator it = table.execute_query(query);
-      vector<value> key_vec;
-      while (it != end) {
-        if (it->partition_key().compare(paths[1]) == 0) {
-          cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
-          prop_vals_t keys {
+  //if (paths.size() == 3) {
+  if (paths[2].compare("*") == 0) {
+    table_query query {};
+    table_query_iterator end;
+    table_query_iterator it = table.execute_query(query);
+    vector<value> key_vec;
+    while (it != end) {
+      if (it->partition_key().compare(paths[1]) == 0) {
+        cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
+        prop_vals_t keys {
           make_pair("Partition",value::string(it->partition_key())),
           make_pair("Row", value::string(it->row_key()))};
-          keys = get_properties(it->properties(), keys);
-          key_vec.push_back(value::object(keys));
-        }
-        ++it;
+        keys = get_properties(it->properties(), keys);
+        key_vec.push_back(value::object(keys));
+      }
+      ++it;
       }
       message.reply(status_codes::OK, value::array(key_vec));
+      return;
     }
-    return;
-  }
+    
+  
 
   // GET specific entry: Partition == paths[1], Row == paths[2]
   table_operation retrieve_operation {table_operation::retrieve_entity(paths[1], paths[2])};
