@@ -66,10 +66,10 @@ using prop_vals_t = vector<pair<string,value>>;
 
 constexpr const char* def_url = "http://localhost:34568";
 
-const string create_table {"CreateTable"};
-const string delete_table {"DeleteTable"};
-const string update_entity {"UpdateEntity"};
-const string delete_entity {"DeleteEntity"};
+const string create_table {"CreateTableAdmin"};
+const string delete_table {"DeleteTableAdmin"};
+const string update_entity {"UpdateEntityAdmin"};
+const string delete_entity {"DeleteEntityAdmin"};
 
 /*
   Cache of opened tables
@@ -158,19 +158,19 @@ void handle_get(http_request message) {
   unordered_map<string,string> json_body {get_json_body (message)};
 
   // Need at least a table name
-  if (paths.size()!=1 && paths.size()!=3) {
+  if (paths.size()!=2 && paths.size()!=4) {
     message.reply(status_codes::BadRequest);
     return;
   }
 
-  cloud_table table {table_cache.lookup_table(paths[0])};
+  cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
     message.reply(status_codes::NotFound);
     return;
   }
 
     //GET all entities with specific properties
-  if (paths.size() == 1 && json_body.size()>0) {
+  if (paths.size() == 2 && json_body.size()>0) {
       table_query query {};
       table_query_iterator end;
       table_query_iterator it = table.execute_query(query);
@@ -199,7 +199,7 @@ void handle_get(http_request message) {
     }
 
   // GET all entries in table
-  if (paths.size() == 1 ) {
+  if (paths.size() == 2 ) {
     table_query query {};
     table_query_iterator end;
     table_query_iterator it = table.execute_query(query);
@@ -219,13 +219,13 @@ void handle_get(http_request message) {
 
   //GET all entities from a specific partition
   //if (paths.size() == 3) {
-  if (paths[2].compare("*") == 0) {
+  if (paths[3].compare("*") == 0) {
     table_query query {};
     table_query_iterator end;
     table_query_iterator it = table.execute_query(query);
     vector<value> key_vec;
     while (it != end) {
-      if (it->partition_key().compare(paths[1]) == 0) {
+      if (it->partition_key().compare(paths[2]) == 0) {
         cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
         prop_vals_t keys {
           make_pair("Partition",value::string(it->partition_key())),
@@ -242,7 +242,7 @@ void handle_get(http_request message) {
   
 
   // GET specific entry: Partition == paths[1], Row == paths[2]
-  table_operation retrieve_operation {table_operation::retrieve_entity(paths[1], paths[2])};
+  table_operation retrieve_operation {table_operation::retrieve_entity(paths[2], paths[3])};
   table_result retrieve_result {table.execute(retrieve_operation)};
   cout << "HTTP code: " << retrieve_result.http_status_code() << endl;
   if (retrieve_result.http_status_code() == status_codes::NotFound) {
