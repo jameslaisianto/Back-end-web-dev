@@ -71,6 +71,7 @@ const string delete_table {"DeleteTable"};
 const string update_entity {"UpdateEntity"};
 const string delete_entity {"DeleteEntity"};
 
+
 /*
   Cache of opened tables
  */
@@ -252,6 +253,41 @@ void handle_get(http_request message) {
 
   table_entity entity {retrieve_result.entity()};
   table_entity::properties_type properties {entity.properties()};
+   
+  //GET Read Entity with Authentication
+    if (paths[0] == "ReadEntityAuth") {
+        std::string token_privaleges {"&sp=r"}; //Setting token privaleges (read)
+        
+        if(paths.size() < 4){       //checks if less than four parameters were provided
+            message.reply(status_codes::BadRequest);
+            return;
+        }
+        
+        
+        else if(paths[2].find(token_privaleges) == string::npos){ //Check if token is not authorized, if not, return NotFound
+            message.reply(status_codes::NotFound);
+            return;
+        }
+        
+        
+        else{                           //Token is authorized and allowing to read entity
+            table_operation retrieve_operation {table_operation::retrieve_entity(paths[1], paths[2])};
+            table_result retrieve_result {table.execute(retrieve_operation)};
+            cout << "HTTP code: " << retrieve_result.http_status_code() << endl;
+            if (retrieve_result.http_status_code() == status_codes::NotFound) {
+                message.reply(status_codes::NotFound);
+                return;
+            }
+            
+            table_entity entity {retrieve_result.entity()};
+            table_entity::properties_type properties {entity.properties()};
+        }
+    }
+    
+    
+    
+    
+
   
   // If the entity has any properties, return them as JSON
   prop_vals_t values (get_properties(properties));
@@ -325,12 +361,51 @@ void handle_put(http_request message) {
 
     table_operation operation {table_operation::insert_or_merge_entity(entity)};
     table_result op_result {table.execute(operation)};
-
     message.reply(status_codes::OK);
   }
   else {
     message.reply(status_codes::BadRequest);
   }
+    
+   
+  //Update Entity with Authentication
+    try{
+        if (paths[0] == "UpdateEntityAuth") {
+            std::string token_privaleges {"&sp=ru"}; //Setting token privaleges (update)
+            
+            if(paths.size() < 4){
+                message.reply(status_codes::BadRequest);
+                return;
+            }
+            
+            else if (paths[2].find(token_privaleges) == string::npos) {
+                message.reply(status_codes::Forbidden);
+                return;
+            }
+            
+            else{
+            cout << "Update " << entity.partition_key() << " / " << entity.row_key() << endl;
+            table_entity::properties_type& properties = entity.properties();
+            for (const auto v : get_json_body(message)) {
+                properties[v.first] = entity_property {v.second};
+            }
+            
+            table_operation operation {table_operation::insert_or_merge_entity(entity)};
+            table_result op_result {table.execute(operation)};
+            
+            message.reply(status_codes::OK);
+            }
+        }
+     }
+    catch{
+        cout << "Azure Table Storage error: " << e.what() << endl;
+        cout << e.result().extended_error().message() << endl;
+        if (e.result().http_status_code() == status_codes::Forbidden)
+            message.reply(status_codes::Forbidden);
+        else
+            message.reply(status_codes::InternalError);
+    }
+    
 }
 
 /*
