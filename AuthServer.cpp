@@ -179,7 +179,7 @@ void handle_get(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** AuthServer GET " << path << endl;
   auto paths = uri::split_path(path);
-  undordered_map<string,string> json_body {get_json_body(message)};
+  unordered_map<string,string> json_body {get_json_body(message)};
 
   // Need at least an operation and userid
   if (paths.size() < 2) {
@@ -228,7 +228,7 @@ void handle_get(http_request message) {
   //     ++it;
   //   }
   // }
-} // 
+  // 
   
 
   
