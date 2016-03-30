@@ -285,7 +285,6 @@ void handle_get(http_request message) {
     
     
     
-    
 
   
   // If the entity has any properties, return them as JSON
@@ -367,7 +366,7 @@ void handle_put(http_request message) {
   }
     
    
-   //Update Entity with Authentication
+    //Update Entity with Authentication
     if (paths[0] == "UpdateEntityAuth") {
         
         if (paths.size() < 4){
