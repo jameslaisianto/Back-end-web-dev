@@ -447,7 +447,7 @@ SUITE(GET) {
     pair<status_code,value> result {
       do_request (methods::GET,
                   string(BasicFixture::addr)
-                  + read_entity_admin + "/"
+                  + "read_entity_admin" + "/"
                   + string(BasicFixture::table))};
     CHECK_EQUAL(status_codes::OK, result.first);
     value obj1 {
@@ -486,7 +486,7 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr)
+                        string(GetFixture::addr) + "read_entity_admin" + "/"
                         + string(GetFixture::table)+ "/" + "BMW" + "/" +"*" )};
         //CHECK_EQUAL(result.first.is_array(),status_codes::OK);
         //CHECK_EQUAL(2, result.first.as_array().size());
@@ -512,7 +512,7 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr)
+                        string(GetFixture::addr)+ "read_entity_admin" + "/"
                         + "TestTable" + "/" + "Audi" + "/" +"*" )};
         CHECK_EQUAL(status_codes::OK, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
@@ -531,7 +531,7 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr)
+                        string(GetFixture::addr)+ "read_entity_admin" + "/"
                         + "WrongTable" + "/" + "Audi" + "/" +"*" )}; //Input wrong table name
         CHECK_EQUAL(status_codes::NotFound, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
@@ -550,7 +550,7 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr)
+                        string(GetFixture::addr)+ "read_entity_admin" + "/"
                         + "AnotherWrongTable" + "/" + "Lexus" + "/" +"*" )}; //Input wrong table name
         CHECK_EQUAL(status_codes::NotFound, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
@@ -569,7 +569,7 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr)
+                        string(GetFixture::addr)+ "read_entity_admin" + "/"
                         + "TestTable" + "/" + "Lexus" + "/" + "" )}; //Input with no *
         CHECK_EQUAL(status_codes::BadRequest, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
@@ -588,7 +588,7 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr)
+                        string(GetFixture::addr)+ "read_entity_admin" + "/"
                         + "TestTable" + "/" +  "/" + "*" )}; //Input with no partition name
         CHECK_EQUAL(status_codes::BadRequest, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
@@ -607,7 +607,7 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr)
+                        string(GetFixture::addr)+ "read_entity_admin" + "/"
                         + "Apple" + "/" + "*" )}; //Input with no table name
         CHECK_EQUAL(status_codes::BadRequest, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
@@ -625,7 +625,7 @@ SUITE(GET) {
 
     pair<status_code,value> result {
       do_request (methods::GET,
-      string(GetFixture::addr)
+      string(GetFixture::addr)+ "read_entity_admin" + "/"
       + string(GetFixture::table)
       , value::object (vector<pair<string,value>>
             {make_pair("Born", value::string("*"))})
@@ -649,7 +649,7 @@ SUITE(GET) {
 
     pair<status_code,value> result {
       do_request (methods::GET,
-      string(GetFixture::addr)
+      string(GetFixture::addr)+ "read_entity_admin" + "/"
       + string(GetFixture::table)
       , value::object (vector<pair<string,value>>
             {make_pair("Song", value::string("*"))})
@@ -673,7 +673,7 @@ SUITE(GET) {
 
     pair<status_code,value> result {
       do_request (methods::GET,
-      string(GetFixture::addr)
+      string(GetFixture::addr)+ "read_entity_admin" + "/"
       + string(GetFixture::table)
       , value::object (vector<pair<string,value>>
             {make_pair("Fake property", value::string("*"))})
@@ -698,7 +698,7 @@ SUITE(GET) {
 
     pair<status_code,value> result {
       do_request (methods::GET,
-      string(GetFixture::addr)
+      string(GetFixture::addr)+ "read_entity_admin" + "/"
       + string(GetFixture::table)
       , value::object (vector<pair<string,value>>
             {make_pair("Born", value::string("*")),make_pair("art",value::string("*"))})
@@ -721,7 +721,7 @@ SUITE(GET) {
 
       pair<status_code,value> result {
         do_request (methods::GET,
-        string(GetFixture::addr)
+        string(GetFixture::addr)+ "read_entity_admin" + "/"
         + string(GetFixture::table)+ "/" + partition //path size == 2, causing a BadRequest
         , value::object (vector<pair<string,value>>
               {make_pair("Born", value::string("*"))})
@@ -743,7 +743,7 @@ SUITE(GET) {
 
       pair<status_code,value> result {
         do_request (methods::GET,
-        string(GetFixture::addr)
+        string(GetFixture::addr)+ "read_entity_admin" + "/"
         + "FakeTable"
         , value::object (vector<pair<string,value>>
               {make_pair("Born", value::string("*"))})
