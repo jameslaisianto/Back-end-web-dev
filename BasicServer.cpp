@@ -369,15 +369,15 @@ void handle_put(http_request message) {
     //Update Entity with Authentication
     if (paths[0] == "UpdateEntityAuth") {
         
-        if (paths.size() < 4){
+        if (paths.size() < 4){  //checks if message is valid
             message.reply(status_codes::BadRequest);
             return;
         }
         
-        auto properties = get_json_body(message);
-        auto updating = update_with_token(message, tables_endpoint, properties);
+        auto properties = get_json_body(message); //retrieves JSON body in the message
+        auto updating = update_with_token(message, tables_endpoint, properties); //updates entity
         
-        if (updating == status_codes::OK) {
+        if (updating == status_codes::OK) { //returns OK if successful
             message.reply(status_codes::OK);
             return;
         }
