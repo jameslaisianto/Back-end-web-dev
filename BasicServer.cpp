@@ -267,9 +267,7 @@ void handle_get(http_request message) {
             auto authentication = read_with_token(message,tables_endpoint); //returns status code and entity
             if (authentication.first == status_codes::OK) { //if status code is ok, return the entity
                 
-                table_operation retrieve_operation {table_operation::retrieve_entity(paths[2], paths[3])};
-                table_result retrieve_result {table.execute(retrieve_operation)};
-                table_entity entity {retrieve_result.entity()};
+                table_entity entity {authentication.second};
                 table_entity::properties_type properties {entity.properties()};
                 
                 message.reply(status_codes::OK);
