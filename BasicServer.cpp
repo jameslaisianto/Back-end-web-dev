@@ -127,19 +127,19 @@ unordered_map<string,string> get_json_body(http_request message) {
   value json{};
   message.extract_json(true)
     .then([&json](value v) -> bool
-	  {
+    {
             json = v;
-	    return true;
-	  })
+      return true;
+    })
     .wait();
 
   if (json.is_object()) {
     for (const auto& v : json.as_object()) {
       if (v.second.is_string()) {
-	results[v.first] = v.second.as_string();
+  results[v.first] = v.second.as_string();
       }
       else {
-	results[v.first] = v.second.serialize();
+  results[v.first] = v.second.serialize();
       }
     }
   }
@@ -208,8 +208,8 @@ void handle_get(http_request message) {
     while (it != end) {
       cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
       prop_vals_t keys {
-	make_pair("Partition",value::string(it->partition_key())),
-	make_pair("Row", value::string(it->row_key()))};
+  make_pair("Partition",value::string(it->partition_key())),
+  make_pair("Row", value::string(it->row_key()))};
       keys = get_properties(it->properties(), keys);
       key_vec.push_back(value::object(keys));
       ++it;
@@ -267,9 +267,7 @@ void handle_get(http_request message) {
             auto authentication = read_with_token(message,tables_endpoint); //returns status code and entity
             if (authentication.first == status_codes::OK) { //if status code is ok, return the entity
                 
-                table_operation retrieve_operation {table_operation::retrieve_entity(paths[2], paths[3])};
-                table_result retrieve_result {table.execute(retrieve_operation)};
-                table_entity entity {retrieve_result.entity()};
+                table_entity entity {authentication.second};
                 table_entity::properties_type properties {entity.properties()};
                 
                 message.reply(status_codes::OK);
@@ -369,15 +367,15 @@ void handle_put(http_request message) {
     //Update Entity with Authentication
     if (paths[0] == "UpdateEntityAuth") {
         
-        if (paths.size() < 4){
+        if (paths.size() < 4){  //checks if message is valid
             message.reply(status_codes::BadRequest);
             return;
         }
         
-        auto properties = get_json_body(message);
-        auto updating = update_with_token(message, tables_endpoint, properties);
+        auto properties = get_json_body(message); //retrieves JSON body in the message
+        auto updating = update_with_token(message, tables_endpoint, properties); //updates entity
         
-        if (updating == status_codes::OK) {
+        if (updating == status_codes::OK) { //returns OK if successful
             message.reply(status_codes::OK);
             return;
         }
@@ -404,8 +402,8 @@ void handle_delete(http_request message) {
   auto paths = uri::split_path(path);
   // Need at least an operation and table name
   if (paths.size() < 2) {
-	message.reply(status_codes::BadRequest);
-	return;
+  message.reply(status_codes::BadRequest);
+  return;
   }
 
   string table_name {paths[1]};
@@ -425,8 +423,8 @@ void handle_delete(http_request message) {
   else if (paths[0] == delete_entity) {
     // For delete entity, also need partition and row
     if (paths.size() < 4) {
-	message.reply(status_codes::BadRequest);
-	return;
+  message.reply(status_codes::BadRequest);
+  return;
     }
     table_entity entity {paths[2], paths[3]};
     cout << "Delete " << entity.partition_key() << " / " << entity.row_key()<< endl;
@@ -436,7 +434,7 @@ void handle_delete(http_request message) {
 
     int code {op_result.http_status_code()};
     if (code == status_codes::OK || 
-	code == status_codes::NoContent)
+  code == status_codes::NoContent)
       message.reply(status_codes::OK);
     else
       message.reply(code);
