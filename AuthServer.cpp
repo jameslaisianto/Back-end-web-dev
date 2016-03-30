@@ -28,6 +28,9 @@ using azure::storage::table_operation;
 using azure::storage::table_request_options;
 using azure::storage::table_result;
 using azure::storage::table_shared_access_policy;
+using azure::storage::table_query;
+using azure::storage::table_query_iterator;
+using azure::storage::table_result;
 
 using std::cin;
 using std::cout;
@@ -176,11 +179,64 @@ void handle_get(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** AuthServer GET " << path << endl;
   auto paths = uri::split_path(path);
+  unordered_map<string,string> json_body {get_json_body(message)};
+
   // Need at least an operation and userid
   if (paths.size() < 2) {
     message.reply(status_codes::BadRequest);
     return;
   }
+  //json body cannot have more than 1 property
+  if(json_body.size()>1){
+    message.reply(status_codes::BadRequest);
+    return;
+  }
+  //first string has to be Password and the password cannot be empty
+  if(json_body.size()==1){
+    for(const auto v:json_body){
+      if(v.first!="Password"){
+        message.reply(status_codes::BadRequest);
+        return;
+      }
+      if(v.second.empty()){
+      message.reply(status_codes::BadRequest);
+      return;
+      }
+    }
+  }
+   
+  
+  // // //UserID does not exist/wrong userID gives error 404
+  // // table_operation retrieve_operation {table_operation::retrieve_entity(paths[1])};
+  // // table_result retrieve_result{table.execute(retrieve_operation)};
+  // //   if(retrieve_result.http_status_code()==status_codes::NotFound){
+  // //     message.reply(status_codes::NotFound);
+  // //     return;
+  // //   }
+  
+  // if(paths[0]==get_read_token_op){
+  //   table_query {};
+  //   table_query_iterator end;
+  //   table_query_iterator it = table.execute_query(query);
+  //   vector<value> result_vec;
+  //   while(it != end){
+  //     prop_str_vals_t keys {};
+  //     keys = get_string_properties(it->properties(),keys)
+  //     result_vec.push_back; 
+      
+      
+  //     ++it;
+  //   }
+  // }
+  // 
+  
+
+  
+  
+
+
+
+
   message.reply(status_codes::NotImplemented);
 }
 
