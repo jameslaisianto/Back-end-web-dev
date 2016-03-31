@@ -90,6 +90,14 @@ prop_str_vals_t get_string_properties (const table_entity::properties_type& prop
   return values;
 }
 
+value build_json_object (const vector<pair<string,string>>& properties) {
+    value result {value::object ()};
+    for (auto& prop : properties) {
+      result[prop.first] = value::string(prop.second);
+    }
+    return result;
+}
+
 /*
   Given an HTTP message with a JSON body, return the JSON
   body as an unordered map of strings to strings.
@@ -205,7 +213,10 @@ void handle_get(http_request message) {
     }
   }
    
+  cloud_table table {table_cache.lookup_table("AuthTable")};
+  cloud_table data_table {table_cache.lookup_table("DataTable")};
   
+
   // // //UserID does not exist/wrong userID gives error 404
   // // table_operation retrieve_operation {table_operation::retrieve_entity(paths[1])};
   // // table_result retrieve_result{table.execute(retrieve_operation)};
@@ -213,30 +224,100 @@ void handle_get(http_request message) {
   // //     message.reply(status_codes::NotFound);
   // //     return;
   // //   }
+  table_query query{};
+  table_query_iterator end;
+  table_query_iterator iterator = table.execute_query(query);
+  bool flag = false;
+  while(iterator!=end){
+    if(iterator->row_key()==paths[2]){
+      flag = true;
+    }
+  }
+  if(flag==false){
+    message.reply(status_codes::NotFound);
+  }
   
-  // if(paths[0]==get_read_token_op){
-  //   table_query {};
-  //   table_query_iterator end;
-  //   table_query_iterator it = table.execute_query(query);
-  //   vector<value> result_vec;
-  //   while(it != end){
-  //     prop_str_vals_t keys {};
-  //     keys = get_string_properties(it->properties(),keys)
-  //     result_vec.push_back; 
+  if(paths[0]==get_read_token_op){
+    table_query query{};
+    table_query_iterator end;
+    table_query_iterator it = table.execute_query(query);
+    string DataP {};
+    string DataR {};
+    int counter{1};
+    vector<value> token_vec;
+    while(it != end){
+      prop_str_vals_t keys {};
+      keys = get_string_properties(it->properties());
+      for(const auto c:json_body){
+        for(auto i = keys.begin();i!=keys.end();i++){
+          if((*i).second != c.second){
+            message.reply(status_codes::NotFound);
+          }
+          if((*i).second == c.second){
+            counter++;
+          }
+          if(counter==2){
+            DataP = (*i).second;
+            counter++;
+          }
+          if(counter==3){    
+            DataR = (*i).second;
+            pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,table_shared_access_policy::permissions::read)};
+            if(token_pair.first == status_codes::OK){
+              pair<string,string> result {make_pair("token",token_pair.second)};
+              value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
+              message.reply(status_codes::OK,end_result);
+              return;
+            
+            }
+          }    
+        }      
+      }
+      ++it;
+    }
       
+  }
+  
+  if(paths[0]==get_update_token_op){
+    table_query query{};
+    table_query_iterator end;
+    table_query_iterator it = table.execute_query(query);
+    string DataP {};
+    string DataR {};
+    int counter{1};
+    vector<value> token_vec;
+    while(it != end){
+      prop_str_vals_t keys {};
+      keys = get_string_properties(it->properties()); 
+      for(const auto c:json_body){
+        for(auto i = keys.begin();i!=keys.end();i++){
+          if((*i).second != c.second){
+            message.reply(status_codes::NotFound);
+          }
+          if((*i).second == c.second){
+            counter++;
+          }
+          if(counter==2){
+            DataP = (*i).second;
+            counter++;
+          }
+          if(counter==3){    
+            DataR = (*i).second;
+            pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,
+                table_shared_access_policy::permissions::read|table_shared_access_policy::permissions::update)};
+            if(token_pair.first == status_codes::OK){
+              pair<string,string> result {make_pair("token",token_pair.second)};
+              value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
+              message.reply(status_codes::OK,end_result);
+              return;
+            }
+          }    
+        }      
+      }
+      ++it;
+    }
       
-  //     ++it;
-  //   }
-  // }
-  // 
-  
-
-  
-  
-
-
-
-
+  }
   message.reply(status_codes::NotImplemented);
 }
 

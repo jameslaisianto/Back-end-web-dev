@@ -283,7 +283,7 @@ int put_entity(const string& addr, const string& table, const string& partition,
 int put_entity(const string& addr, const string& table, const string& partition, const string& row, const string& prop, const string& pstring) {
   pair<status_code,value> result {
     do_request (methods::PUT,
-                addr + read_entity_admin + "/" + table + "/" + partition + "/" + row,
+                addr + "ReadEntityAdmin/" + "/" + table + "/" + partition + "/" + row,
                 value::object (vector<pair<string,value>>
                                {make_pair(prop, value::string(pstring))}))};
   return result.first;
@@ -359,7 +359,7 @@ pair<status_code,string> get_update_token(const string& addr,  const string& use
   }
 }
 
-pair<status_code,string> get_read_token(const string& addr,  const string& userid, const string& password) {
+pair<status_code,string> get_read (const string& addr,  const string& userid, const string& password) {
   value pwd {build_json_object (vector<pair<string,string>> {make_pair("Password", password)})};
   pair<status_code,value> result {do_request (methods::GET,
                                               addr +
@@ -516,16 +516,10 @@ SUITE(GET) {
         
         pair<status_code,value> result {
             do_request (methods::GET,
-                        string(GetFixture::addr) + "read_entity_admin" + "/"
-                        + string(GetFixture::table)+ "/" + "BMW" + "/" +"*" )};
-        //CHECK_EQUAL(result.first.is_array(),status_codes::OK);
-        //CHECK_EQUAL(2, result.first.as_array().size());
-        /*
-         Checking the body is not well-supported by UnitTest++, as we have to test
-         independent of the order of returned values.
-         */
-        //CHECK_EQUAL(body.serialize(), string("{\"")+string(GetFixture::property)+ "\"unsure emoticon""+string(GetFixture::prop_val)+"\"}");
+                        string(GetFixture::addr) + read_entity_admin + "/"
+                        + string(GetFixture::table)+ "BMW" + "/" +"*" )};
         CHECK_EQUAL(status_codes::OK, result.first);
+
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
     }
     
@@ -543,7 +537,7 @@ SUITE(GET) {
         pair<status_code,value> result {
             do_request (methods::GET,
                         string(GetFixture::addr)
-                         + "read_entity_admin"  + "/"
+                         + read_entity_admin  + "/"
                         + "TestTable" + "/" + "Audi" + "/" +"*" )};
         CHECK_EQUAL(status_codes::OK, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
@@ -563,8 +557,8 @@ SUITE(GET) {
         pair<status_code,value> result {
             do_request (methods::GET,
                         string(GetFixture::addr)
-                         + "read_entity_admin"  + "/"
-                        + "WrongTable" + "/" + "Audi" + "/" +"*" )}; //Input wrong table name
+                         + read_entity_admin  + "/"
+                        + "WrongTable" + "/" + "Audi" + "/" + "*" )}; //Input wrong table name
         CHECK_EQUAL(status_codes::NotFound, result.first);
         CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
     }
@@ -1045,9 +1039,9 @@ SUITE(UPDATE_AUTH) {
 //OK
 SUITE(GET_AUTH){
 TEST_FIXTURE(AuthFixture, ReadAuth1){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
@@ -1074,9 +1068,9 @@ TEST_FIXTURE(AuthFixture, ReadAuth1){
   //table found
   //OK
 TEST_FIXTURE(AuthFixture, ReadAuth2){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
@@ -1103,9 +1097,9 @@ TEST_FIXTURE(AuthFixture, ReadAuth2){
   //missing table name
   //NotFound
   TEST_FIXTURE(AuthFixture, ReadAuth3){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
@@ -1132,9 +1126,9 @@ TEST_FIXTURE(AuthFixture, ReadAuth2){
   //missing partition name
   //NotFound
   TEST_FIXTURE(AuthFixture, ReadAuth4){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
@@ -1161,9 +1155,9 @@ TEST_FIXTURE(AuthFixture, ReadAuth2){
   //missing row name
   //NotFound
   TEST_FIXTURE(AuthFixture, ReadAuth5){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
@@ -1190,9 +1184,9 @@ TEST_FIXTURE(AuthFixture, ReadAuth2){
   //table not found
   //NotFound
   TEST_FIXTURE(AuthFixture, ReadAuth6){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
@@ -1219,9 +1213,9 @@ TEST_FIXTURE(AuthFixture, ReadAuth2){
   //less than 4 param
   //BadRequest
   TEST_FIXTURE(AuthFixture, ReadAuth7){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
@@ -1247,9 +1241,9 @@ TEST_FIXTURE(AuthFixture, ReadAuth2){
  //token did not authorize access to this entity
   //NotFound
   TEST_FIXTURE(AuthFixture, ReadAuth8){
-     string partition {"Solasido"};
+      string partition {"Solasido"};
       string row {"Indonesia"};
-      strSing property {"Location"};
+      string property {"Location"};
       string prop_val {"Jawa"};
       int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
       cerr << "put result " << put_result << endl;
