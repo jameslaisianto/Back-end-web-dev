@@ -273,12 +273,29 @@ int delete_table (const string& addr, const string& table) {
  pstring: Value of the property, as a string
  */
 int put_entity(const string& addr, const string& table, const string& partition, const string& row, const string& prop, const string& pstring) {
+<<<<<<< HEAD
     pair<status_code,value> result {
         do_request (methods::PUT,
                     addr + "UpdateEntityAdmin" + "/" + table + "/" + partition + "/" + row,
                     value::object (vector<pair<string,value>>
                                    {make_pair(prop, value::string(pstring))}))};
     return result.first;
+=======
+  pair<status_code,value> result {
+    do_request (methods::PUT,
+                addr + update_entity_admin + "/" + table + "/" + partition + "/" + row,
+                value::object (vector<pair<string,value>>
+                               {make_pair(prop, value::string(pstring))}))};
+  return result.first;
+}
+int put_entity(const string& addr, const string& table, const string& partition, const string& row, const string& prop, const string& pstring) {
+  pair<status_code,value> result {
+    do_request (methods::PUT,
+                addr + "ReadEntityAdmin/" + "/" + table + "/" + partition + "/" + row,
+                value::object (vector<pair<string,value>>
+                               {make_pair(prop, value::string(pstring))}))};
+  return result.first;
+>>>>>>> bf8facd0c2050f25c6f200dafe53f14d4723b91b
 }
 
 
@@ -351,6 +368,7 @@ pair<status_code,string> get_update_token(const string& addr,  const string& use
         return make_pair (result.first, token);
     }
 }
+
 
 pair<status_code,string> get_read_token(const string& addr,  const string& userid, const string& password) {
     value pwd {build_json_object (vector<pair<string,string>> {make_pair("Password", password)})};
@@ -1059,6 +1077,7 @@ SUITE(GET_AUTH){
         
         pair<status_code,value> ret_res {
             do_request (methods::GET,
+<<<<<<< HEAD
                         string(AuthFixture::addr)
                         + read_entity_admin + "/"
                         + AuthFixture::table + "/"
@@ -1066,6 +1085,13 @@ SUITE(GET_AUTH){
                         + AuthFixture::row)};
         CHECK_EQUAL (status_codes::OK, ret_res.first);
         CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+=======
+                        string(GetFixture::addr) + read_entity_admin + "/"
+                        + string(GetFixture::table)+ "BMW" + "/" +"*" )};
+        CHECK_EQUAL(status_codes::OK, result.first);
+
+        CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+>>>>>>> bf8facd0c2050f25c6f200dafe53f14d4723b91b
     }
     //table found
     //OK
@@ -1088,6 +1114,7 @@ SUITE(GET_AUTH){
         
         pair<status_code,value> ret_res {
             do_request (methods::GET,
+<<<<<<< HEAD
                         string(AuthFixture::addr)
                         + read_entity_admin + "/"
                         + "DataTable" + "/"
@@ -1095,6 +1122,13 @@ SUITE(GET_AUTH){
                         + AuthFixture::row)};
         CHECK_EQUAL (status_codes::OK, ret_res.first);
         CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+=======
+                        string(GetFixture::addr)
+                         + read_entity_admin  + "/"
+                        + "TestTable" + "/" + "Audi" + "/" +"*" )};
+        CHECK_EQUAL(status_codes::OK, result.first);
+        CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+>>>>>>> bf8facd0c2050f25c6f200dafe53f14d4723b91b
     }
     //missing table name
     //NotFound
@@ -1117,6 +1151,7 @@ SUITE(GET_AUTH){
         
         pair<status_code,value> ret_res {
             do_request (methods::GET,
+<<<<<<< HEAD
                         string(AuthFixture::addr)
                         + read_entity_admin + "/"
                         + "" + "/"
@@ -1124,6 +1159,13 @@ SUITE(GET_AUTH){
                         + AuthFixture::row)};
         CHECK_EQUAL (status_codes::NotFound, ret_res.first);
         CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+=======
+                        string(GetFixture::addr)
+                         + read_entity_admin  + "/"
+                        + "WrongTable" + "/" + "Audi" + "/" + "*" )}; //Input wrong table name
+        CHECK_EQUAL(status_codes::NotFound, result.first);
+        CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+>>>>>>> bf8facd0c2050f25c6f200dafe53f14d4723b91b
     }
     //missing partition name
     //NotFound
@@ -1600,6 +1642,7 @@ SUITE(TEST_AUTH){
         compare_json_values (expect, ret_res.second);
         CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
     }
+<<<<<<< HEAD
     //No entity with this partition name
     //NotFound
     TEST_FIXTURE(AuthFixture, SingleAuth7){
@@ -1654,6 +1697,806 @@ SUITE(TEST_AUTH){
         compare_json_values (expect, ret_res.second);
         CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
     }   
+=======
+  }
+};
+
+SUITE(GET_TOKEN){
+  //initialize value = demanded value
+  //OK
+  TEST_FIXTURE(AuthFixture, ReadOnlyAuth1){
+    string userid = "Ren";
+    string pwdprop = "Password";
+    string pwdval = "anarchy";
+    
+    int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pwdprop,pwdval)};
+    cerr<<"put result "<<put_result<<endl;
+    assert(put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       userid,
+                       pwdval)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+  }
+  //BadRequest
+  //missing userid from the URI
+  TEST_FIXTURE(AuthFixture, ReadOnlyAuth2){
+    string userid = "Ren";
+    string pwdprop = "Password";
+    string pwdval = "anarchy";
+    
+    int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pwdprop,pwdval)};
+    cerr<<"put result "<<put_result<<endl;
+    assert(put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       "",
+                       pwdval)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::BadRequest);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //BadRequest
+  //contains no password
+  TEST_FIXTURE(AuthFixture, ReadOnlyAuth3){
+    string userid = "Ren";
+    string pwdprop = "Password";
+    string pwdval = "anarchy";
+    
+    int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pwdprop,pwdval)};
+    cerr<<"put result "<<put_result<<endl;
+    assert(put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       userid,
+                       "")};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::BadRequest);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+
+  //BadRequest
+  //more properties other than "Password"
+  // ga tau
+  TEST_FIXTURE(AuthFixture, ReadOnlyAuth4){
+    string userid = "Ren";
+    string pwdprop = "Password";
+    string pwdval = "anarchy";
+    
+    int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pwdprop,pwdval)};
+    cerr<<"put result "<<put_result<<endl;
+    assert(put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       userid,
+                       "otherpassword")};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::BadRequest);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+
+    // NotFound belum dikerjain, userid wasnot found in thetable
+    TEST_FIXTURE(AuthFixture, ReadOnlyAuth5){
+    string userid = "Ren";
+    string pwdprop = "Password";
+    string pwdval = "anarchy";
+    
+    int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pwdprop,pwdval)};
+    cerr<<"put result "<<put_result<<endl;
+    assert(put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       "Tonny",
+                       pwdval)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::NotFound);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+
+   //found but password didnt match
+    TEST_FIXTURE(AuthFixture, ReadOnlyAuth6){
+    string userid = "Ren";
+    string pwdprop = "Password";
+    string pwdval = "anarchy";
+    
+    int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pwdprop,pwdval)};
+    cerr<<"put result "<<put_result<<endl;
+    assert(put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       userid,
+                       "Nostalgia")};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::NotFound);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+}
+
+
+SUITE(UPDATE_TOKEN){
+    TEST_FIXTURE(AuthFixture, UpdateAuth1){
+    string userid = "Ren";
+    string pwdprop = "Password";
+    string pwdval = "anarchy";
+    
+    int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pwdprop,pwdval)};
+    cerr<<"put result "<<put_result<<endl;
+    assert(put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       userid,
+                       pwdval)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+
+
+}
+
+
+SUITE(UPDATE_AUTH) {
+  TEST_FIXTURE(AuthFixture,  PutAuth) {
+
+    pair<string,string> added_prop {make_pair(string("born"),string("1942"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row,
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    value expect {
+      build_json_object (vector<pair<string,string>> 
+                        {added_prop,
+                          make_pair(string(AuthFixture::property), 
+                                    string(AuthFixture::prop_val))}
+                )};
+                             
+    cout << AuthFixture::property << endl;
+    compare_json_values (expect, ret_res.second);
+  }
+}
+
+//Read Authorize and successful
+//OK
+SUITE(GET_AUTH){
+TEST_FIXTURE(AuthFixture, ReadAuth1){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //table found
+  //OK
+TEST_FIXTURE(AuthFixture, ReadAuth2){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + "DataTable" + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //missing table name
+  //NotFound
+  TEST_FIXTURE(AuthFixture, ReadAuth3){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + "" + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::NotFound, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //missing partition name
+  //NotFound
+  TEST_FIXTURE(AuthFixture, ReadAuth4){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + "" + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::NotFound, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //missing row name
+  //NotFound
+  TEST_FIXTURE(AuthFixture, ReadAuth5){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + "")};
+    CHECK_EQUAL (status_codes::NotFound, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //table not found
+  //NotFound
+  TEST_FIXTURE(AuthFixture, ReadAuth6){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + "FakeTableName" + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::NotFound, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //less than 4 param
+  //BadRequest
+  TEST_FIXTURE(AuthFixture, ReadAuth7){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition)};
+    CHECK_EQUAL (status_codes::BadRequest, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+ //token did not authorize access to this entity
+  //NotFound
+  TEST_FIXTURE(AuthFixture, ReadAuth8){
+      string partition {"Solasido"};
+      string row {"Indonesia"};
+      string property {"Location"};
+      string prop_val {"Jawa"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition)};
+    CHECK_EQUAL (status_codes::NotFound, ret_res.first);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+
+}
+
+SUITE(TEST_AUTH){
+
+  //Change property
+  //OK
+  TEST_FIXTURE(AuthFixture, SingleAuth){
+      string partition {"Sol"};
+      string row {"Korea"};
+      string property {"Location"};
+      string prop_val {"Langley"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    pair<string,string> added_prop {make_pair(string("Location"),string("Vancouver"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row,
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    value expect {
+      build_json_object (vector<pair<string,string>> 
+                        {added_prop,
+                          make_pair(string(AuthFixture::property), 
+                                    string(AuthFixture::prop_val))} 
+                )};
+                             
+    cout << AuthFixture::property << endl;
+    compare_json_values (expect, ret_res.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+
+  //Updating same property
+  //OK
+  TEST_FIXTURE(AuthFixture, SingleAuth2){
+      string partition {"Sol"};
+      string row {"Korea"};
+      string property {"Location"};
+      string prop_val {"Langley"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    pair<string,string> added_prop {make_pair(string("Location"),string("Langley"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row,
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    value expect {
+      build_json_object (vector<pair<string,string>> 
+                        {added_prop,
+                          make_pair(string(AuthFixture::property), 
+                                    string(AuthFixture::prop_val))}
+                )};
+                             
+    cout << AuthFixture::property << endl;
+    compare_json_values (expect, ret_res.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //From No property and update it to a property
+  //OK
+  TEST_FIXTURE(AuthFixture, SingleAuth3){
+      string partition {"Sol"};
+      string row {"Korea"};
+      string property {"Location"};
+      string prop_val {""};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    pair<string,string> added_prop {make_pair(string("Location"),string("Langley"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row,
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    value expect {
+      build_json_object (vector<pair<string,string>> 
+                        {added_prop,
+                          make_pair(string(AuthFixture::property), 
+                                    string(AuthFixture::prop_val))}
+                )};
+                             
+    cout << AuthFixture::property << endl;
+    compare_json_values (expect, ret_res.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+  //expecting 4 param but less than 4 were provided
+  //BadRequest
+  TEST_FIXTURE(AuthFixture, SingleAuth4){
+      string partition {"Sol"};
+      string row {"Korea"};
+      string property {"Location"};
+      string prop_val {"Surrey"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    pair<string,string> added_prop {make_pair(string("Location"),string("Langley"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition,
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    value expect {
+      build_json_object (vector<pair<string,string>> 
+                        {added_prop,
+                          make_pair(string(AuthFixture::property), 
+                                    string(AuthFixture::prop_val))}
+                )};
+                             
+    cout << AuthFixture::property << endl;
+    compare_json_values (expect, ret_res.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+
+
+//entity exist but token is for read and not for update
+//Forbidden
+//belum selesai
+  TEST_FIXTURE(AuthFixture, SingleAuth5){
+      string partition {"Sol"};
+      string row {"Korea"};
+      string property {"Location"};
+      string prop_val {"Surrey"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    pair<string,string> added_prop {make_pair(string("Location"),string("Langley"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row + "/",
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    value expect {
+      build_json_object (vector<pair<string,string>> 
+                        {added_prop,
+                          make_pair(string(AuthFixture::property), 
+                                    string(AuthFixture::prop_val))}
+                )};
+                             
+    cout << AuthFixture::property << endl;
+    compare_json_values (expect, ret_res.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }
+//Table was not found
+//NotFound
+  TEST_FIXTURE(AuthFixture, SingleAuth6){
+      string partition {"Sol"};
+      string row {"Korea"};
+      string property {"Location"};
+      string prop_val {"Burnaby"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    pair<string,string> added_prop {make_pair(string("Location"),string("Langley"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + "FakeTableName" + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row,
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::NotFound, result.first);
+    
+    pair<status_code,value> ret_res {
+      do_request (methods::GET,
+                  string(AuthFixture::addr)
+                  + read_entity_admin + "/"
+                  + AuthFixture::table + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row)};
+    CHECK_EQUAL (status_codes::OK, ret_res.first);
+    value expect {
+      build_json_object (vector<pair<string,string>> 
+                        {added_prop,
+                          make_pair(string(AuthFixture::property), 
+                                    string(AuthFixture::prop_val))}
+                )};
+                             
+    cout << AuthFixture::property << endl;
+    compare_json_values (expect, ret_res.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+  }   
+//No entity with this partition name
+//NotFound
+  TEST_FIXTURE(AuthFixture, SingleAuth7){
+      string partition {"Sol"};
+      string row {"Korea"};
+      string property {"Location"};
+      string prop_val {"Burnaby"};
+      int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+      cerr << "put result " << put_result << endl;
+      assert (put_result == status_codes::OK);
+
+    pair<string,string> added_prop {make_pair(string("Location"),string("Langley"))};
+
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token(AuthFixture::auth_addr,
+                       AuthFixture::userid,
+                       AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+    
+    pair<status_code,value> result {
+      do_request (methods::PUT,
+                  string(AuthFixture::addr)
+                  + update_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + "FakePartitionName" + "/"
+                  + AuthFixture::row,
+                  value::object (vector<pair<string,value>>
+                                   {make_pair(added_prop.first,
+                                              value::string(added_prop.second))})
+                  )};
+    CHECK_EQUAL(status_codes::NotFound, result.first);
+>>>>>>> bf8facd0c2050f25c6f200dafe53f14d4723b91b
     
     //No entity with this row name
     //NotFound
