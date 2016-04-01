@@ -4,7 +4,7 @@
 #include <string>
 
 const std::string storage_connection_string {"DefaultEndpointsProtocol=https;"
-	"AccountName=qinxinxstorage;"
-	"AccountKey=hhMRhqfoW5QzESkFanU53ymO8LUI6QvLXf/+7F2y7dzIz+JC3iCcV45QQYJClXC7IwrTTvyQORqktfW5857fhw=="};
+	"AccountName=jamatto;"
+	"AccountKey="ISwW+SkCyMnUUh5OGuAz9mAojQ9Od3lvubPww0PMGnucn7GkcGn57uca58J9GRcklc/56dDcUK2PqQ/CtI7p4A==};
 
 #endif
