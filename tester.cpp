@@ -1819,6 +1819,13 @@ SUITE(GET_TOKEN){
 	 //table found
 	 //200
 	 TEST_FIXTURE(AuthFixture, readAuth1) {
+	 string partition {"USA"};
+	 string row {"David"};
+	 string property {"Book"};
+	 string prop_val {"Freedom"};
+	 int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+	 cerr << "put result " << put_result << endl;
+	 assert (put_result == status_codes::OK);
 
 	 cout << "Requesting token" << endl;
 	 pair<status_code, string> token_res{
@@ -1831,11 +1838,11 @@ SUITE(GET_TOKEN){
 	 pair<status_code, value> result{
 	 do_request(methods::GET,
 	 string(AuthFixture::addr)
-	 + read_entity_auth + "/"
+	 + read_entity_admin + "/"
 	 + "DataTable" + "/"
 	 + token_res.second + "/"
 	 + "USA" + "/"
-	 + "Franklin,Aretha"
+	 + "David"
 	 ) };
 	 CHECK_EQUAL(status_codes::OK, result.first);
 	 value expect{
@@ -1854,8 +1861,15 @@ SUITE(GET_TOKEN){
 
 	 //missing table name (400)
 	 TEST_FIXTURE(AuthFixture, readAuth2) {
-
+	 string partition {"Canada"};
+	 string row {"Kathy"};
+	 string property {"School"};
+	 string prop_val {"SFU"};
+	 int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+	 cerr << "put result " << put_result << endl;
+	 assert (put_result == status_codes::OK);
 	 cout << "Requesting token" << endl;
+
 	 pair<status_code, string> token_res{
 	 get_read_token(AuthFixture::auth_addr,
 	 AuthFixture::userid,
@@ -1866,11 +1880,11 @@ SUITE(GET_TOKEN){
 	 pair<status_code, value> result{
 	 do_request(methods::GET,
 	 string(AuthFixture::addr)
-	 + read_entity_auth + "/"
+	 + read_entity_admin + "/"
 	 + "/"
 	 + token_res.second + "/"
-	 + "USA" + "/"
-	 + "Franklin, Aretha") };
+	 + "Canada" + "/"
+	 + "Kathy") };
 	 CHECK_EQUAL(status_codes::BadRequest, result.first);
 	 value expect{
 	 build_json_object(vector<pair<string, string>>
@@ -1886,6 +1900,13 @@ SUITE(GET_TOKEN){
 
 	 //missing token(400)
 	 TEST_FIXTURE(AuthFixture, readAuth3) {
+	 string partition {"British"};
+	 string row {"Jam"};
+	 string property {"Song"};
+	 string prop_val {"Bang"};
+	 int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+	 cerr << "put result " << put_result << endl;
+	 assert (put_result == status_codes::OK);
 
 	 cout << "Requesting token" << endl;
 	 pair<status_code, string> token_res{
@@ -1898,11 +1919,11 @@ SUITE(GET_TOKEN){
 	 pair<status_code, value> result{
 	 do_request(methods::PUT,
 	 string(AuthFixture::addr)
-	 + read_entity_auth + "/"
+	 + read_entity_admin + "/"
 	 + "DataTable" + "/"
 	 + "/"
-	 + "USA" + "/"
-	 + "Franklin, Aretha"
+	 + "British" + "/"
+	 + "Jam"
 	 ) };
 	 CHECK_EQUAL(status_codes::BadRequest, result.first);
 	 value expect{
@@ -1919,7 +1940,13 @@ SUITE(GET_TOKEN){
 
 	 //missing partition (400)
 	 TEST_FIXTURE(AuthFixture, readAuth4) {
-	 pair<string, string> added_prop{ make_pair(string("born"), string("1948")) };
+	 string partition {"France"};
+     string row {"Anna"};
+     string property {"Born"};
+     string prop_val {"1987"};
+     int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+     cerr << "put result " << put_result << endl;
+     assert (put_result == status_codes::OK);
 
 	 cout << "Requesting token" << endl;
 	 pair<status_code, string> token_res{
@@ -1932,11 +1959,11 @@ SUITE(GET_TOKEN){
 	 pair<status_code, value> result{
 	 do_request(methods::PUT,
 	 string(AuthFixture::addr)
-	 + read_entity_auth + "/"
+	 + read_entity_admin + "/"
 	 + "DataTable" + "/"
 	 + token_res.second + "/"
 	 + "/"
-	 + "Franklin, Aretha"
+	 + "Anna"
 	 ) };
 	 CHECK_EQUAL(status_codes::BadRequest, result.first);
 	 value expect{
@@ -1953,6 +1980,13 @@ SUITE(GET_TOKEN){
 
 	 //missing row (400)
 	 TEST_FIXTURE(AuthFixture, readAuth5) {
+	 string partition {"Japan"};
+	 string row {"Yuki"};
+	 string property {"Major"};
+	 string prop_val {"Computer Science"};
+	 int put_result {put_entity (AuthFixture::addr, AuthFixture::table, partition, row, property, prop_val)};
+	 cerr << "put result " << put_result << endl;
+	 assert (put_result == status_codes::OK);
 
 	 cout << "Requesting token" << endl;
 	 pair<status_code, string> token_res{
@@ -1965,10 +1999,10 @@ SUITE(GET_TOKEN){
 	 pair<status_code, value> result{
 	 do_request(methods::PUT,
 	 string(AuthFixture::addr)
-	 + read_entity_auth + "/"
+	 + read_entity_admin + "/"
 	 + "DataTable" + "/"
 	 + token_res.second + "/"
-	 + "USA" + "/"
+	 + "Japan" + "/"
 	 ) };
 	 CHECK_EQUAL(status_codes::BadRequest, result.first);
 	 value expect{
@@ -1997,7 +2031,7 @@ SUITE(GET_TOKEN){
 	 pair<status_code, value> result{
 	 do_request(methods::GET,
 	 string(AuthFixture::addr)
-	 + read_entity_auth + "/"
+	 + read_entity_admin + "/"
 	 + "Test_Table" + "/"
 	 + token_res.second + "/"
 	 + AuthFixture::partition + "/"
@@ -2030,9 +2064,9 @@ SUITE(GET_TOKEN){
 	 pair<status_code, value> result{
 	 do_request(methods::GET,
 	 string(AuthFixture::addr)
-	 + read_entity_auth + "/"
+	 + read_entity_admin + "/"
 	 + AuthFixture::table + "/"
-	 + "SE$B20153$P" + "/"
+	 + "invalid_token" + "/"
 	 + AuthFixture::partition + "/"
 	 + AuthFixture::row
 	 ) };
