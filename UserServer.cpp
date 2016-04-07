@@ -246,14 +246,22 @@ void handle_get(http_request message) {
         }
     }
     
+    //MASIH KURANG
     if (paths[0] == "ReadFriendList") {
         if (!=signed_in) {
             message.reply(status_codes::Forbidden);
             return;
         }
-        
-        
+        else{
+            pair<status_code, value> result = do_request(methods::GET, addr + paths[1] + "/" + "*");
+            if (result.first == status_codes::OK) {
+                message.reply(status_codes::OK);
+                return;
+            }
+        }
+
     }
+    
     
 }
 
@@ -267,12 +275,13 @@ void handle_post(http_request message) {
     string userid = paths[1];
     //auto password = get_json_body(message);
     
-    
+    //MASIH KURANG
     if (paths[0] == "SignOn") {
         status = do_request(methods::GET, addr+"GetUpdateToken"+"/"+"AuthTable"+"/"+userid, )
         if (status.first == status_codes::OK) {
             message.reply(status_codes::OK,status.second);
             SignedOn.insert(userid); //Insert the userid into SignedOn status
+            SignedOn[userid] = status.second; //Set the token as the value of the userid
             return;
         }
     }
@@ -280,7 +289,7 @@ void handle_post(http_request message) {
     if (paths[0] == "SignOff") {
         for (SignedOn.begin(); it!=SignedOn.end(); it++){
             if (it->first == paths[1]) {
-                SignedOn.erase(paths[1]);
+                SignedOn.erase(paths[1]);   //Erase the userid and token from SignedOn status
                 message.reply(status_codes::OK);
                 return;
             }
@@ -313,6 +322,13 @@ void handle_put(http_request message) {
             message.reply(status_codes::Forbidden);
             return;
         }
+        else{
+            pair<status_code, value> result = do_request(methods::PUT, addr+ "UpdateEntityAdmin"+"/"+"DataTable"+"/"+paths[1]+paths[2]);
+            if (result.first == status_codes::OK) {
+                message.reply(status_codes::OK);
+                return;
+            }
+        }
         
         
     }
@@ -322,12 +338,27 @@ void handle_put(http_request message) {
             message.reply(status_codes::Forbidden);
             return;
         }
+        else{
+            pair<status_code, value> result = do_request(methods::Delete, addr + "DeleteEntityAdmin"+"/"+"DataTable"+"/"+paths[1]+paths[2]);
+            if (result.first == status_codes::OK) {
+                message.reply(status_codes::OK);
+                return;
+            }
+        }
+        
     }
     
     if (paths[0] == "UpdateStatus") {  //method for updating status
         if (!signed_in) {
             message.reply(status_codes::Forbidden);
             return;
+        }
+        else{
+            pair<status_code, value> result = do_request(methods::PUT, addr + "UpdateEntityAuth"+"/"+"DataTable"+"/"+SignedOn[paths[1]]+"/"+paths[1]+"/"+paths[2]);
+            if (result.first == status_codes::OK) {
+                message.reply(status_codes::OK);
+                return;
+            }
         }
     }
     
@@ -366,9 +397,9 @@ int main (int argc, char const * argv[]) {
     cout << "AuthServer: Opening listener" << endl;
     http_listener listener {def_url};
     listener.support(methods::GET, &handle_get);
-    //listener.support(methods::POST, &handle_post);
-    //listener.support(methods::PUT, &handle_put);
-    //listener.support(methods::DEL, &handle_delete);
+    listener.support(methods::POST, &handle_post);
+    listener.support(methods::PUT, &handle_put);
+    listener.support(methods::DEL, &handle_delete);
     listener.open().wait(); // Wait for listener to complete starting
     
     cout << "Enter carriage return to stop AuthServer." << endl;
