@@ -98,6 +98,7 @@ value build_json_object (const vector<pair<string,string>>& properties) {
     return result;
 }
 
+
 /*
  Given an HTTP message with a JSON body, return the JSON
  body as an unordered map of strings to strings.
@@ -194,6 +195,7 @@ void handle_get(http_request message) {
         message.reply(status_codes::BadRequest);
         return;
     }
+
     //json body cannot have more than 1 property
     if(json_body.size()>1){
         message.reply(status_codes::BadRequest);
@@ -227,19 +229,23 @@ void handle_get(http_request message) {
     table_query query{};
     table_query_iterator end;
     table_query_iterator iterator = table.execute_query(query);
-    bool flag = false;
+    bool found = false;
     while(iterator!=end){
-        if(iterator->row_key()==paths[2]){
-            flag = true;
+        if(iterator->row_key()==paths[1]){
+            found = true;
         }
+      iterator++;
     }
-    if(flag==false){
+    if(!found){
         message.reply(status_codes::NotFound);
     }
     
+    //if(paths)
+
     if(paths[0]==get_read_token_op){
         table_query query{};
         table_query_iterator end;
+
         table_query_iterator it = table.execute_query(query);
         string DataP {};
         string DataR {};
@@ -319,6 +325,7 @@ void handle_get(http_request message) {
         
     }
     message.reply(status_codes::NotImplemented);
+
 }
 
 /*
