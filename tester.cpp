@@ -2108,3 +2108,107 @@ SUITE(GET_TOKEN){
 */
      }
 }
+
+
+class UserFixture {
+public:
+    static constexpr const char* addr {"http://localhost:34568/"};
+    static constexpr const char* auth_addr {"http://localhost:34570/"};
+    static constexpr const char* user_addr {"http://localhost:34572/"};
+    static constexpr const char* userid {"user"};
+    static constexpr const char* user_pwd {"user"};
+    static constexpr const char* auth_table {"AuthTable"};
+    static constexpr const char* user_table {"UserTable"};
+    static constexpr const char* auth_table_partition {"Userid"};
+    static constexpr const char* auth_pwd_prop {"Password"};
+    static constexpr const char* table {"DataTable"};
+    static constexpr const char* partition {"USA"};
+    static constexpr const char* row {"Franklin,Aretha"};
+    static constexpr const char* property {"Song"};
+    static constexpr const char* prop_val {"RESPECT"};
+    
+public:
+    UserFixture() {
+
+        int make_result {create_table(addr, table)};
+        cerr << "create result " << make_result << endl;
+        if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
+            throw std::exception();
+        }
+        int make_result_user {create_table(user_addr, user_table)};
+        cerr << "create result " << auth_table << endl;
+        if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
+            throw std::exception();
+        }
+        int put_result {put_entity (addr, table, partition, row, property, prop_val)};
+        cerr << "put result " << put_result << endl;
+        if (put_result != status_codes::OK) {
+            throw std::exception();
+        }
+        int put_result_user {put_entity (user_addr, user_table, partition, row, property, prop_val)};
+        cerr << "put result " << put_result << endl;
+        if (put_result != status_codes::OK) {
+            throw std::exception();
+        }
+
+        // Ensure userid and password in system
+        int user_result {put_entity (addr,
+                                     auth_table,
+                                     auth_table_partition,
+                                     userid,
+                                     auth_pwd_prop,
+                                     user_pwd)};
+        cerr << "user auth table insertion result " << user_result << endl;
+        if (user_result != status_codes::OK)
+            throw std::exception();
+
+
+    }
+    
+    ~UserFixture() {
+        int del_ent_result {delete_entity (addr, table, partition, row)};
+        if (del_ent_result != status_codes::OK) {
+            throw std::exception();
+        }
+    }
+};
+
+SUITE(SignOn){
+    TEST_FIXTURE(UserFixture,Sigon1){
+    string userid {"Huni"};
+    pair<string,string> added_prop {make_pair(string("Password:"),string("secret"))};
+    
+    pair<status_code,value> result {
+    do_request (methods::POST,
+            string(UserFixture::user_addr)
+                    +"SignOn"
+                    +userid
+                    ,  value::object (vector<pair<string,value>>
+     {make_pair(added_prop.first, value::string(added_prop.second))})
+                )};
+    CHECK_EQUAL(status_codes::OK,result.first);
+    
+    }
+
+}
+
+SUITE(AddFriend){
+    TEST_FIXTURE(UserFixture,AddFriend1){
+    string userid {"NotJames"} ; 
+    string friendcountry {"NotCanada"};
+    string fullname {"NotJamesMatthew"};
+
+    pair<status_code,value> result {
+    do_request (methods::PUT,
+             string(UserFixture::user_addr)
+                     + "AddFriend"
+                     + userid + "/"
+                     + friendcountry + "/"
+                     + fullname )};
+     CHECK_EQUAL(status_codes::OK, result.first);
+
+     
+    }
+
+
+}
