@@ -390,8 +390,8 @@ pair<status_code,string> get_read_token(const string& addr,  const string& useri
  The entity is deleted when the fixture shuts down
  but the table is left. See the comments in the code
  for the reason for this design.
- 
  */
+ 
 SUITE(GET) {
     class GetFixture {
     public:
@@ -819,8 +819,14 @@ public:
     
 public:
     AuthFixture() {
+
         int make_result {create_table(addr, table)};
         cerr << "create result " << make_result << endl;
+        if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
+            throw std::exception();
+        }
+        int make_result_auth {create_table(addr, auth_table)};
+        cerr << "create result " << auth_table << endl;
         if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
             throw std::exception();
         }
@@ -829,6 +835,12 @@ public:
         if (put_result != status_codes::OK) {
             throw std::exception();
         }
+        int put_result_auth {put_entity (addr, auth_table, partition, row, property, prop_val)};
+        cerr << "put result " << put_result << endl;
+        if (put_result != status_codes::OK) {
+            throw std::exception();
+        }
+
         // Ensure userid and password in system
         int user_result {put_entity (addr,
                                      auth_table,
@@ -839,6 +851,8 @@ public:
         cerr << "user auth table insertion result " << user_result << endl;
         if (user_result != status_codes::OK)
             throw std::exception();
+
+
     }
     
     ~AuthFixture() {
@@ -860,18 +874,19 @@ SUITE(GET_TOKEN){
         vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
         
         //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-        int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
-        cerr<<"put result "<<put_result<<endl;
-        assert(put_result == status_codes::OK);
+        int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
+        cerr<<"put result "<<put_result_auth<<endl;
+        assert(put_result_auth == status_codes::OK);
         
         cout << "Requesting token" << endl;
         pair<status_code,string> token_res {
-            get_read_token(AuthFixture::auth_addr,
+            get_read_token(AuthFixture::addr,
                            userid,
                            pwdval)};
-        cout << "Token response " << token_res.first << endl;
+        cout << "Token response " << token_res.first<< endl;
         CHECK_EQUAL (token_res.first, status_codes::OK);
-        CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+        CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
         
     }
     
@@ -888,19 +903,20 @@ SUITE(GET_TOKEN){
      vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
      
      //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-     int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
+     int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
 
-     cerr<<"put result "<<put_result<<endl;
-     assert(put_result == status_codes::OK);
+     cerr<<"put result "<<put_result_auth<<endl;
+     assert(put_result_auth == status_codes::OK);
      
      cout << "Requesting token" << endl;
      pair<status_code,string> token_res {
-     get_read_token(AuthFixture::auth_addr,
+     get_read_token(AuthFixture::addr,
      "",
      pwdval)};
      cout << "Token response " << token_res.first << endl;
      CHECK_EQUAL (token_res.first, status_codes::BadRequest);
-     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
      }
      //BadRequest
      //contains no password
@@ -913,19 +929,20 @@ SUITE(GET_TOKEN){
      vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
      
      //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-     int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
+      int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
 
-     cerr<<"put result "<<put_result<<endl;
-     assert(put_result == status_codes::OK);
+     cerr<<"put result "<<put_result_auth<<endl;
+     assert(put_result_auth == status_codes::OK);
      
      cout << "Requesting token" << endl;
      pair<status_code,string> token_res {
-     get_read_token(AuthFixture::auth_addr,
+     get_read_token(AuthFixture::addr,
      userid,
      "")};
      cout << "Token response " << token_res.first << endl;
      CHECK_EQUAL (token_res.first, status_codes::BadRequest);
-     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
      }
      
      //BadRequest
@@ -940,19 +957,19 @@ SUITE(GET_TOKEN){
      vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
      
      //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-     int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
-
-     cerr<<"put result "<<put_result<<endl;
-     assert(put_result == status_codes::OK);
+      int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
+     cerr<<"put result "<<put_result_auth<<endl;
+     assert(put_result_auth == status_codes::OK);
      
      cout << "Requesting token" << endl;
      pair<status_code,string> token_res {
-     get_read_token(AuthFixture::auth_addr,
+     get_read_token(AuthFixture::addr,
      userid,
      "otherpassword")};
      cout << "Token response " << token_res.first << endl;
      CHECK_EQUAL (token_res.first, status_codes::BadRequest);
-     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+    CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
      }
      
      // NotFound belum dikerjain, userid wasnot found in thetable
@@ -965,19 +982,19 @@ SUITE(GET_TOKEN){
      vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
      
      //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-     int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
-
-     cerr<<"put result "<<put_result<<endl;
-     assert(put_result == status_codes::OK);
+      int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
+     cerr<<"put result "<<put_result_auth<<endl;
+     assert(put_result_auth == status_codes::OK);
      
      cout << "Requesting token" << endl;
      pair<status_code,string> token_res {
-     get_read_token(AuthFixture::auth_addr,
+     get_read_token(AuthFixture::addr,
      "Tonny",
      pwdval)};
      cout << "Token response " << token_res.first << endl;
      CHECK_EQUAL (token_res.first, status_codes::NotFound);
-     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
      }
      
      //found but password didnt match
@@ -990,19 +1007,19 @@ SUITE(GET_TOKEN){
      vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
      
      //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-     int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
-
-     cerr<<"put result "<<put_result<<endl;
-     assert(put_result == status_codes::OK);
+    int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
+     cerr<<"put result "<<put_result_auth<<endl;
+     assert(put_result_auth == status_codes::OK);
      
      cout << "Requesting token" << endl;
      pair<status_code,string> token_res {
-     get_read_token(AuthFixture::auth_addr,
+     get_read_token(AuthFixture::addr,
      userid,
      "Nostalgia")};
      cout << "Token response " << token_res.first << endl;
      CHECK_EQUAL (token_res.first, status_codes::NotFound);
-     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
      }
     
      
@@ -1017,19 +1034,19 @@ SUITE(GET_TOKEN){
      vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
      
      //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-     int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
-
-     cerr<<"put result "<<put_result<<endl;
-     assert(put_result == status_codes::OK);
+      int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
+     cerr<<"put result "<<put_result_auth<<endl;
+     assert(put_result_auth == status_codes::OK);
      
      cout << "Requesting token" << endl;
      pair<status_code,string> token_res {
-     get_update_token(AuthFixture::auth_addr,
+     get_update_token(AuthFixture::addr,
      userid,
      pwdval)};
      cout << "Token response " << token_res.first << endl;
      CHECK_EQUAL (token_res.first, status_codes::OK);
-     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::table,partition,row));
+
+     CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
      }
      
      
