@@ -15,6 +15,8 @@
 
 #include "TableCache.h"
 #include "make_unique.h"
+#include "ClientUtils.h"
+#include "ServerUtils.h"
 
 //#include "azure_keys.h"
 
@@ -66,17 +68,26 @@ const string data_table_name {"DataTable"};
 
 const string get_read_token_op {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
+const string create_table_op {"CreateTableAdmin"};
+const string delete_table_op {"DeleteTableAdmin"};
+
+const string read_entity_admin {"ReadEntityAdmin"};
+const string update_entity_admin {"UpdateEntityAdmin"};
+const string delete_entity_admin {"DeleteEntityAdmin"};
+
+const string read_entity_auth {"ReadEntityAuth"};
+const string update_entity_auth {"UpdateEntityAuth"};
 
 
 //Address Declarations
-static constexpr const char* addr {"http://localhost:34568/"}
-static constexpr const char* auth_addr {"http://localhost:34570/"}
+static constexpr const char* addr {"http://localhost:34568/"};
+static constexpr const char* auth_addr {"http://localhost:34570/"};
 //End Address Declarations
 
-/*
- Cache of opened tables
- */
-//TableCache table_cache {};
+
+//Cache of opened tables
+ 
+TableCache table_cache {};
 
 /*
  Convert properties represented in Azure Storage type
@@ -188,8 +199,9 @@ pair<status_code,string> do_get_token (const cloud_table& data_table,
 
 //Initialize Unordered_Map ===================
 
-    std::Unordered_Map<string,string> SignedOn;
-    std::Unordered_Map<string,string> std::iterator it;
+    unordered_map<string,string> SignedOn;
+    unordered_map<string,string>::iterator it;
+
 
 //End initialize Unordered_Map ================
 
@@ -240,15 +252,15 @@ void handle_get(http_request message) {
     // //   }
     
     bool signed_in = false;             //set signed_in status for user as false
-    for (SignedOn.begin(); it!=SignedOn; it++) {
+    for (SignedOn.begin(); it!=SignedOn.end(); it++) {
         if (it->first == paths[1]) {    //if user is found in the map, set as true
             signed_in = true;
         }
     }
     
-    //MASIH KURANG
+    //MASIH KURANG - BELOM PARSE FRIEND LIST
     if (paths[0] == "ReadFriendList") {
-        if (!=signed_in) {
+        if (!signed_in) {
             message.reply(status_codes::Forbidden);
             return;
         }
@@ -271,17 +283,33 @@ void handle_get(http_request message) {
 void handle_post(http_request message) {
     string path {uri::decode(message.relative_uri().path())};
     cout << endl << "**** POST " << path << endl;
+    auto paths = uri::split_path(path);
     
     string userid = paths[1];
-    //auto password = get_json_body(message);
+    unordered_map<string,string> json_body {get_json_body(message)};
+    string pass {};
     
-    //MASIH KURANG
+    
+    for(const auto v:json_body){
+        if(v.first=="Password"){
+            pass = v.second;
+        }
+        else{
+            message.reply(status_codes::BadRequest);
+            cout << "There is no password" << endl;
+            return;
+        }
+    }
+    
+   
     if (paths[0] == "SignOn") {
-        status = do_request(methods::GET, addr+"GetUpdateToken"+"/"+"AuthTable"+"/"+userid, )
+        
+        vector<pair<string,string>> password = make_pair("Password",pass);
+        auto status = do_request(methods::GET, auth_addr + get_update_token_op + "/" + paths[1],password);
         if (status.first == status_codes::OK) {
+            pair<string,string> client = make_pair(userid,status.second);
+            SignedOn.insert(client); //Insert the userid & token into SignedOn status
             message.reply(status_codes::OK,status.second);
-            SignedOn.insert(userid); //Insert the userid into SignedOn status
-            SignedOn[userid] = status.second; //Set the token as the value of the userid
             return;
         }
     }
@@ -308,13 +336,20 @@ void handle_post(http_request message) {
 void handle_put(http_request message) {
     string path {uri::decode(message.relative_uri().path())};
     cout << endl << "**** PUT " << path << endl;
+    auto paths = uri::split_path(path);
     
     bool signed_in = false;             //set signed_in status for user as false
-    for (SignedOn.begin(); it!=SignedOn; it++) {
+    for (SignedOn.begin(); it!=SignedOn.end(); it++) {
         if (it->first == paths[1]) {    //if user is found in the map, set as true
             signed_in = true;
         }
     }
+    
+    //GET THE FRIEND LIST
+    auto user_entity = do_request(methods::GET, addr + read_entity_auth + "/"+"DataTable"+"/"+ SignOn[paths1] + "/" + paths[1] + "/" + paths[2]);
+    auto entity_map = unpack_json_object(user_enitty.second);
+    string friends_list = entity_map["Friends"];
+    friends_list_t friends_list_parsed = parse_friends_list(const string& friends_list) //parse the friends list from previous line, returns
     
     
     if (paths[0] == "AddFriend") {  //method for adding a friend
@@ -323,15 +358,14 @@ void handle_put(http_request message) {
             return;
         }
         else{
-            pair<status_code, value> result = do_request(methods::PUT, addr+ "UpdateEntityAdmin"+"/"+"DataTable"+"/"+paths[1]+paths[2]);
-            if (result.first == status_codes::OK) {
-                message.reply(status_codes::OK);
-                return;
-            }
+            pair<string,string> friends = make_pair(
+            
         }
         
         
     }
+    
+    
     
     if (paths[0] == "UnFriend") {  //method for deleting a friend
         if (!signed_in) {
@@ -339,7 +373,7 @@ void handle_put(http_request message) {
             return;
         }
         else{
-            pair<status_code, value> result = do_request(methods::Delete, addr + "DeleteEntityAdmin"+"/"+"DataTable"+"/"+paths[1]+paths[2]);
+            pair<status_code, value> result = do_request(methods::DEL, addr + update_entity_auth +"/"+"DataTable"+"/"+paths[1]+paths[2]);
             if (result.first == status_codes::OK) {
                 message.reply(status_codes::OK);
                 return;
@@ -354,7 +388,7 @@ void handle_put(http_request message) {
             return;
         }
         else{
-            pair<status_code, value> result = do_request(methods::PUT, addr + "UpdateEntityAuth"+"/"+"DataTable"+"/"+SignedOn[paths[1]]+"/"+paths[1]+"/"+paths[2]);
+            pair<status_code, value> result = do_request(methods::PUT, addr + update_entity_auth+"/"+"DataTable"+"/"+SignedOn[paths[1]]+"/"+paths[1]+"/"+paths[2]);
             if (result.first == status_codes::OK) {
                 message.reply(status_codes::OK);
                 return;
