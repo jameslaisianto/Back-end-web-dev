@@ -16,6 +16,7 @@
 
 #include <UnitTest++/UnitTest++.h>
 
+
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -322,7 +323,7 @@ int put_entity_multiple_props(const string& addr, const string& table, const str
 
 int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password){
     pair<status_code,value> result {
-        do_request (methods::PUT,
+        do_request (methods::GET,
                     addr + "GetReadToken/" + table + "/" + userid + "/" , value::object (password))};
     return result.first;
 }
@@ -839,6 +840,7 @@ public:
         cerr << "user auth table insertion result " << user_result << endl;
         if (user_result != status_codes::OK)
             throw std::exception();
+        
     }
     
     ~AuthFixture() {
@@ -853,16 +855,24 @@ SUITE(GET_TOKEN){
     //initialize value = demanded value
     //OK
     TEST_FIXTURE(AuthFixture, ReadOnlyAuth1){
-        string userid = "Ren";
+        string userid = "user";
         string pwdprop = "Password";
-        string pwdval = "anarchy";
+        string pwdval = "user";
         value pasval = build_json_object(vector<pair<string,string>> {make_pair(pwdprop,pwdval)});
         vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
         
         //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-        int put_result {put_entity_token(AuthFixture::addr,AuthFixture::table,userid,pasvec)};
+        try {
+        int put_result {put_entity_token(AuthFixture::auth_addr,AuthFixture::table,userid,pasvec)};
         cerr<<"put result "<<put_result<<endl;
-        assert(put_result == status_codes::OK);
+        CHECK_EQUAL(status_codes::OK, put_result);
+        }
+        
+        catch(const std::exception& e){
+            cout<<e.what()<<endl;
+        }
+        
+
         
         cout << "Requesting token" << endl;
         pair<status_code,string> token_res {
