@@ -189,7 +189,7 @@ void handle_get(http_request message) {
     cout << endl << "**** AuthServer GET " << path << endl;
     auto paths = uri::split_path(path);
     unordered_map<string,string> json_body {get_json_body(message)};
-    
+    string password_str {json_body["Password"]}; 
     // Need at least an operation and userid
     if (paths.size() < 2) {
         message.reply(status_codes::BadRequest);
@@ -218,14 +218,6 @@ void handle_get(http_request message) {
     cloud_table table {table_cache.lookup_table("AuthTable")};
     cloud_table data_table {table_cache.lookup_table("DataTable")};
     
-    
-    // // //UserID does not exist/wrong userID gives error 404
-    // // table_operation retrieve_operation {table_operation::retrieve_entity(paths[1])};
-    // // table_result retrieve_result{table.execute(retrieve_operation)};
-    // //   if(retrieve_result.http_status_code()==status_codes::NotFound){
-    // //     message.reply(status_codes::NotFound);
-    // //     return;
-    // //   }
     table_query query{};
     table_query_iterator end;
     table_query_iterator iterator = table.execute_query(query);
@@ -240,8 +232,6 @@ void handle_get(http_request message) {
         message.reply(status_codes::NotFound);
     }
     
-    //if(paths)
-
     if(paths[0]==get_read_token_op){
         table_query query{};
         table_query_iterator end;
@@ -249,83 +239,85 @@ void handle_get(http_request message) {
         table_query_iterator it = table.execute_query(query);
         string DataP {};
         string DataR {};
-        int counter{1};
-        vector<value> token_vec;
+        int counter{0};
+        //vector<value> token_vec;
         while(it != end){
             prop_str_vals_t keys {};
             keys = get_string_properties(it->properties());
-            for(const auto c:json_body){
-                for(auto i = keys.begin();i!=keys.end();i++){
-                    if((*i).second != c.second){
-                        message.reply(status_codes::NotFound);
-                    }
-                    if((*i).second == c.second){
-                        counter++;
-                    }
-                    if(counter==2){
-                        DataP = (*i).second;
-                        counter++;
-                    }
-                    if(counter==3){
-                        DataR = (*i).second;
-                        pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,table_shared_access_policy::permissions::read)};
-                        if(token_pair.first == status_codes::OK){
-                            pair<string,string> result {make_pair("token",token_pair.second)};
-                            value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
-                            message.reply(status_codes::OK,end_result);
-                            return;
-                            
-                        }
-                    }
-                }
+            auto key_it = keys.begin();
+            if(key_it->second == password_str){
+                counter++;            
             }
-            ++it;
+            if(key_it->second == auth_table_partition_prop){
+                DataP = key_it->second;
+                counter++;
+            }
+            if(key_it->second == auth_table_row_prop){
+                DataR = key_it->second;
+                counter++;
+            }
+            it++;
         }
-        
+        if(counter==3){
+            pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,table_shared_access_policy::permissions::read)};
+            if(token_pair.first == status_codes::OK){
+                pair<string,string> result {make_pair("token",token_pair.second)};
+                value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
+                message.reply(status_codes::OK,end_result);
+                return;
+            }
+        }
+        else if(counter<3){
+            message.reply(status_codes::NotFound);
+            return;
+        }            
+    
     }
+        
     
     if(paths[0]==get_update_token_op){
         table_query query{};
         table_query_iterator end;
+
         table_query_iterator it = table.execute_query(query);
         string DataP {};
         string DataR {};
-        int counter{1};
-        vector<value> token_vec;
+        int counter{0};
+        //vector<value> token_vec;
         while(it != end){
             prop_str_vals_t keys {};
             keys = get_string_properties(it->properties());
-            for(const auto c:json_body){
-                for(auto i = keys.begin();i!=keys.end();i++){
-                    if((*i).second != c.second){
-                        message.reply(status_codes::NotFound);
-                    }
-                    if((*i).second == c.second){
-                        counter++;
-                    }
-                    if(counter==2){
-                        DataP = (*i).second;
-                        counter++;
-                    }
-                    if(counter==3){
-                        DataR = (*i).second;
-                        pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,
-                                                                          table_shared_access_policy::permissions::read|table_shared_access_policy::permissions::update)};
-                        if(token_pair.first == status_codes::OK){
-                            pair<string,string> result {make_pair("token",token_pair.second)};
-                            value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
-                            message.reply(status_codes::OK,end_result);
-                            return;
-                        }
-                    }
-                }
+            auto key_it = keys.begin(); 
+            if(key_it->second == password_str){
+                ++counter;            
             }
-            ++it;
+            if(key_it->second == auth_table_partition_prop){
+                DataP = key_it->second;
+                ++counter;
+            }
+            if(key_it->second == auth_table_row_prop){
+                DataR = key_it->second;
+                ++counter;
+            }
+            it++;
         }
-        
+        if(counter==3){
+            pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,table_shared_access_policy::permissions::read
+                                                                                    |table_shared_access_policy::permissions::update)};
+            if(token_pair.first == status_codes::OK){
+                pair<string,string> result {make_pair("token",token_pair.second)};
+                value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
+                message.reply(status_codes::OK,end_result);
+                return;
+            }
+        }
+        else if(counter<3){
+            message.reply(status_codes::NotFound);
+            return;
+        }            
     }
     message.reply(status_codes::NotImplemented);
-
+    return;
 }
 
 /*
