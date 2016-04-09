@@ -295,7 +295,7 @@ int put_entity(const string& addr, const string& table, const string& partition,
 int put_entity(const string& addr, const string& table, const string& partition, const string& row,
                const vector<pair<string,value>>& props) {
     pair<status_code,value> result {
-        do_request (methods::PUT,
+        do_request (methods::GET,
                     addr + "UpdateEntityAdmin/" + table + "/" + partition + "/" + row,
                     value::object (props))};
     return result.first;
@@ -309,10 +309,10 @@ int put_entity_multiple_props(const string& addr, const string& table, const str
     return result.first;
 }
 
-int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password){
+int put_entity_token(const string& addr, const string& auth_table, const string& userid, const vector<pair<string,value>>& password){
     pair<status_code,value> result {
-        do_request (methods::PUT,
-                    addr + "GetReadToken/" + table + "/" + userid + "/" , value::object (password))};
+        do_request (methods::GET,
+                    addr + "GetReadToken/" + auth_table + "/" + userid + "/" , value::object (password))};
     return result.first;
 }
 //need json object consist of password, , DataPartition, and DataRow
@@ -803,24 +803,24 @@ public:
 public:
     AuthFixture() {
 
-        int make_result {create_table(addr, table)};
-        cerr << "create result " << make_result << endl;
-        if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
-            throw std::exception();
-        }
-        int make_result_auth {create_table(addr, auth_table)};
-        cerr << "create result " << auth_table << endl;
-        if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
-            throw std::exception();
-        }
+        // int make_result {create_table(addr, table)};
+        // cerr << "create result " << make_result << endl;
+        // if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
+        //     throw std::exception();
+        // }
+        // int make_result_auth {create_table(auth_addr, auth_table)};
+        // cerr << "create result " << auth_table << endl;
+        // if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
+        //     throw std::exception();
+        // }
         int put_result {put_entity (addr, table, partition, row, property, prop_val)};
         cerr << "put result " << put_result << endl;
         if (put_result != status_codes::OK) {
             throw std::exception();
         }
         int put_result_auth {put_entity (addr, auth_table, partition, row, property, prop_val)};
-        cerr << "put result " << put_result << endl;
-        if (put_result != status_codes::OK) {
+        cerr << "put result auth " << put_result_auth << endl;
+        if (put_result_auth != status_codes::OK) {
             throw std::exception();
         }
 
@@ -853,23 +853,23 @@ SUITE(GET_TOKEN){
         string userid = "Ren";
         string pwdprop = "Password";
         string pwdval = "anarchy";
-        value pasval = build_json_object(vector<pair<string,string>> {make_pair(pwdprop,pwdval)});
-        vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
+        // value pasval = build_json_object(vector<pair<string,string>> {make_pair(pwdprop,pwdval)});
+        // vector<pair<string,value>> pasvec {make_pair(pwdprop,pasval)};
         
-        //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
-        int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
-        cerr<<"put result "<<put_result_auth<<endl;
-        assert(put_result_auth == status_codes::OK);
+        // //int put_entity_token(const string& addr, const string& table, const string& userid, const vector<pair<string,value>>& password)
+        // int put_result_auth {put_entity_token(AuthFixture::addr,AuthFixture::auth_table,userid,pasvec)};
+        // cerr<<"put result auth"<<put_result_auth<<endl;
+        // CHECK_EQUAL(status_codes::OK, put_result_auth);
         
         cout << "Requesting token" << endl;
         pair<status_code,string> token_res {
             get_read_token(AuthFixture::addr,
-                           userid,
-                           pwdval)};
+                           AuthFixture::userid,
+                           AuthFixture::user_pwd)};
         cout << "Token response " << token_res.first<< endl;
         CHECK_EQUAL (token_res.first, status_codes::OK);
 
-        CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
+        // CHECK_EQUAL(status_codes::OK, delete_entity(AuthFixture::addr,AuthFixture::auth_table,partition,row));
         
     }
     
