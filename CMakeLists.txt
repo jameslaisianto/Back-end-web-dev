@@ -41,3 +41,4 @@ add_executable (userserver UserServer.cpp ClientUtils.cpp)
 target_link_libraries (userserver ${REST} ${REST_LIBRARIES})
 
 
+
