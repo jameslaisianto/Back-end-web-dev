@@ -42,3 +42,4 @@ target_link_libraries (userserver ${REST} ${REST_LIBRARIES})
 
 
 
+ add_executable (pushserver PushServer.cpp ClientUtils.cpp) target_link_libraries (pushserver ${REST} ${REST_LIBRARIES})
