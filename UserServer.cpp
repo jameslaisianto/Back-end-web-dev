@@ -15,8 +15,10 @@
 
 #include "TableCache.h"
 #include "make_unique.h"
+#include "ClientUtils.h"
+#include "ServerUtils.h"
 
-#include "azure_keys.h"
+//#include "azure_keys.h"
 
 using azure::storage::storage_exception;
 using azure::storage::cloud_table;
@@ -55,7 +57,7 @@ using web::http::experimental::listener::http_listener;
 
 using prop_str_vals_t = vector<pair<string,string>>;
 
-constexpr const char* def_url = "http://localhost:34570";
+constexpr const char* def_url = "http://localhost:34572";
 
 const string auth_table_name {"AuthTable"};
 const string auth_table_userid_partition {"Userid"};
@@ -66,10 +68,25 @@ const string data_table_name {"DataTable"};
 
 const string get_read_token_op {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
+const string create_table_op {"CreateTableAdmin"};
+const string delete_table_op {"DeleteTableAdmin"};
 
-/*
- Cache of opened tables
- */
+const string read_entity_admin {"ReadEntityAdmin"};
+const string update_entity_admin {"UpdateEntityAdmin"};
+const string delete_entity_admin {"DeleteEntityAdmin"};
+
+const string read_entity_auth {"ReadEntityAuth"};
+const string update_entity_auth {"UpdateEntityAuth"};
+
+
+//Address Declarations
+static constexpr const char* addr {"http://localhost:34568/"};
+static constexpr const char* auth_addr {"http://localhost:34570/"};
+//End Address Declarations
+
+
+//Cache of opened tables
+ 
 TableCache table_cache {};
 
 /*
@@ -97,7 +114,6 @@ value build_json_object (const vector<pair<string,string>>& properties) {
     }
     return result;
 }
-
 
 /*
  Given an HTTP message with a JSON body, return the JSON
@@ -181,6 +197,14 @@ pair<status_code,string> do_get_token (const cloud_table& data_table,
     }
 }
 
+//Initialize Unordered_Map ===================
+
+    unordered_map<string,string> SignedOn;
+    unordered_map<string,string>::iterator it;
+
+
+//End initialize Unordered_Map ================
+
 /*
  Top-level routine for processing all HTTP GET requests.
  */
@@ -190,15 +214,12 @@ void handle_get(http_request message) {
     cout << endl << "**** AuthServer GET " << path << endl;
     auto paths = uri::split_path(path);
     unordered_map<string,string> json_body {get_json_body(message)};
-
-    string password_str {json_body["Password"]}; 
     
     // Need at least an operation and userid
     if (paths.size() < 2) {
         message.reply(status_codes::BadRequest);
         return;
     }
-
     //json body cannot have more than 1 property
     if(json_body.size()>1){
         message.reply(status_codes::BadRequest);
@@ -218,114 +239,42 @@ void handle_get(http_request message) {
         }
     }
     
-    cout << "Found Password"<< endl;
     cloud_table table {table_cache.lookup_table("AuthTable")};
     cloud_table data_table {table_cache.lookup_table("DataTable")};
     
-
-    table_query query{};
-    table_query_iterator end;
-    table_query_iterator iterator = table.execute_query(query);
-    bool found = false;
-    while(iterator!=end){
-        if(iterator->row_key()==paths[1]){
-            found = true;
+    
+    // // //UserID does not exist/wrong userID gives error 404
+    // // table_operation retrieve_operation {table_operation::retrieve_entity(paths[1])};
+    // // table_result retrieve_result{table.execute(retrieve_operation)};
+    // //   if(retrieve_result.http_status_code()==status_codes::NotFound){
+    // //     message.reply(status_codes::NotFound);
+    // //     return;
+    // //   }
+    
+    bool signed_in = false;             //set signed_in status for user as false
+    for (SignedOn.begin(); it!=SignedOn.end(); it++) {
+        if (it->first == paths[1]) {    //if user is found in the map, set as true
+            signed_in = true;
         }
-      iterator++;
-    }
-    if(!found){
-        message.reply(status_codes::NotFound);
     }
     
-    if(paths[0]==get_read_token_op){
-        //cout << "Doing " << paths[0] << endl;
-        table_query query{};
-        table_query_iterator end;
-
-        table_query_iterator it = table.execute_query(query);
-        string DataP {};
-        string DataR {};
-        int counter{0};
-        //vector<value> token_vec;
-        while(it != end){
-            prop_str_vals_t keys {};
-            keys = get_string_properties(it->properties());
-            
-            auto key_it = keys.begin();
-            if(key_it->second == password_str){
-                counter++;            
-            }
-            if(key_it->first == auth_table_partition_prop){
-                DataP = key_it->second;
-                counter++;
-            }
-            if(key_it->first == auth_table_row_prop){
-                DataR = key_it->second;
-                counter++;
-
-            }
-            it++;
+    //MASIH KURANG - BELOM PARSE FRIEND LIST
+    if (paths[0] == "ReadFriendList") {
+        if (!signed_in) {
+            message.reply(status_codes::Forbidden);
+            return;
         }
-        if(counter==3){
-            pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,table_shared_access_policy::permissions::read)};
-            if(token_pair.first == status_codes::OK){
-                pair<string,string> result {make_pair("token",token_pair.second)};
-                value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
-                message.reply(status_codes::OK,end_result);
+        else{
+            pair<status_code, value> result = do_request(methods::GET, addr + paths[1] + "/" + "*");
+            if (result.first == status_codes::OK) {
+                message.reply(status_codes::OK);
                 return;
             }
         }
-        else if(counter<3){
-            message.reply(status_codes::NotFound);
-            return;
-        }            
-    
-    }
-        
-    
-    if(paths[0]==get_update_token_op){
-        table_query query{};
-        table_query_iterator end;
 
-        table_query_iterator it = table.execute_query(query);
-        string DataP {};
-        string DataR {};
-        int counter{0};
-        //vector<value> token_vec;
-        while(it != end){
-            prop_str_vals_t keys {};
-            keys = get_string_properties(it->properties());
-            auto key_it = keys.begin(); 
-            if(key_it->second == password_str){
-                ++counter;            
-            }
-            if(key_it->first == auth_table_partition_prop){
-                DataP = key_it->second;
-                ++counter;
-            }
-            if(key_it->first == auth_table_row_prop){
-                DataR = key_it->second;
-                ++counter;
-            }
-            it++;
-        }
-        if(counter==3){
-            pair<status_code,string> token_pair {do_get_token(data_table,DataP,DataR,table_shared_access_policy::permissions::read
-                                                                                    |table_shared_access_policy::permissions::update)};
-            if(token_pair.first == status_codes::OK){
-                pair<string,string> result {make_pair("token",token_pair.second)};
-                value end_result {build_json_object(vector<pair<string,string>> {make_pair("token",token_pair.second)})};
-                message.reply(status_codes::OK,end_result);
-                return;
-            }
-        }
-        else if(counter<3){
-            message.reply(status_codes::NotFound);
-            return;
-        }            
     }
-    message.reply(status_codes::NotImplemented);
-    return;
+    
+    
 }
 
 /*
@@ -334,7 +283,52 @@ void handle_get(http_request message) {
 void handle_post(http_request message) {
     string path {uri::decode(message.relative_uri().path())};
     cout << endl << "**** POST " << path << endl;
+    auto paths = uri::split_path(path);
+    
+    string userid = paths[1];
+    unordered_map<string,string> json_body {get_json_body(message)};
+    string pass {};
+    
+    
+    for(const auto v:json_body){
+        if(v.first=="Password"){
+            pass = v.second;
+        }
+        else{
+            message.reply(status_codes::BadRequest);
+            cout << "There is no password" << endl;
+            return;
+        }
+    }
+    
+   
+    if (paths[0] == "SignOn") {
+        
+        vector<pair<string,string>> password = make_pair("Password",pass);
+        auto status = do_request(methods::GET, auth_addr + get_update_token_op + "/" + paths[1],password);
+        if (status.first == status_codes::OK) {
+            pair<string,string> client = make_pair(userid,status.second);
+            SignedOn.insert(client); //Insert the userid & token into SignedOn status
+            message.reply(status_codes::OK,status.second);
+            return;
+        }
+    }
+    
+    if (paths[0] == "SignOff") {
+        for (SignedOn.begin(); it!=SignedOn.end(); it++){
+            if (it->first == paths[1]) {
+                SignedOn.erase(paths[1]);   //Erase the userid and token from SignedOn status
+                message.reply(status_codes::OK);
+                return;
+            }
+        }
+        message.reply(status_codes::NotFound);
+        return;
+    }
 }
+    
+    
+
 
 /*
  Top-level routine for processing all HTTP PUT requests.
@@ -342,6 +336,67 @@ void handle_post(http_request message) {
 void handle_put(http_request message) {
     string path {uri::decode(message.relative_uri().path())};
     cout << endl << "**** PUT " << path << endl;
+    auto paths = uri::split_path(path);
+    
+    bool signed_in = false;             //set signed_in status for user as false
+    for (SignedOn.begin(); it!=SignedOn.end(); it++) {
+        if (it->first == paths[1]) {    //if user is found in the map, set as true
+            signed_in = true;
+        }
+    }
+    
+    //GET THE FRIEND LIST
+    auto user_entity = do_request(methods::GET, addr + read_entity_auth + "/"+"DataTable"+"/"+ SignOn[paths1] + "/" + paths[1] + "/" + paths[2]);
+    auto entity_map = unpack_json_object(user_enitty.second);
+    string friends_list = entity_map["Friends"];
+    friends_list_t friends_list_parsed = parse_friends_list(const string& friends_list) //parse the friends list from previous line, returns
+    
+    
+    if (paths[0] == "AddFriend") {  //method for adding a friend
+        if (!signed_in) {
+            message.reply(status_codes::Forbidden);
+            return;
+        }
+        else{
+            pair<string,string> friends = make_pair(
+            
+        }
+        
+        
+    }
+    
+    
+    
+    if (paths[0] == "UnFriend") {  //method for deleting a friend
+        if (!signed_in) {
+            message.reply(status_codes::Forbidden);
+            return;
+        }
+        else{
+            pair<status_code, value> result = do_request(methods::DEL, addr + update_entity_auth +"/"+"DataTable"+"/"+paths[1]+paths[2]);
+            if (result.first == status_codes::OK) {
+                message.reply(status_codes::OK);
+                return;
+            }
+        }
+        
+    }
+    
+    if (paths[0] == "UpdateStatus") {  //method for updating status
+        if (!signed_in) {
+            message.reply(status_codes::Forbidden);
+            return;
+        }
+        else{
+            pair<status_code, value> result = do_request(methods::PUT, addr + update_entity_auth+"/"+"DataTable"+"/"+SignedOn[paths[1]]+"/"+paths[1]+"/"+paths[2]);
+            if (result.first == status_codes::OK) {
+                message.reply(status_codes::OK);
+                return;
+            }
+        }
+    }
+    
+    
 }
 
 /*
@@ -364,21 +419,21 @@ void handle_delete(http_request message) {
  response.
  
  If you want to support other methods, uncomment
- the call below that hooks in a the appropriate 
+ the call below that hooks in a the appropriate
  listener.
  
  Wait for a carriage return, then shut the server down.
  */
 int main (int argc, char const * argv[]) {
     cout << "AuthServer: Parsing connection string" << endl;
-    table_cache.init (storage_connection_string);
+    //table_cache.init (storage_connection_string);
     
     cout << "AuthServer: Opening listener" << endl;
     http_listener listener {def_url};
     listener.support(methods::GET, &handle_get);
-    //listener.support(methods::POST, &handle_post);
-    //listener.support(methods::PUT, &handle_put);
-    //listener.support(methods::DEL, &handle_delete);
+    listener.support(methods::POST, &handle_post);
+    listener.support(methods::PUT, &handle_put);
+    listener.support(methods::DEL, &handle_delete);
     listener.open().wait(); // Wait for listener to complete starting
     
     cout << "Enter carriage return to stop AuthServer." << endl;
