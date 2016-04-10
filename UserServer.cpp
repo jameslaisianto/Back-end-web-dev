@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <tuple>
 
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
@@ -18,22 +19,23 @@
 #include "ClientUtils.h"
 #include "ServerUtils.h"
 
+
 //#include "azure_keys.h"
-
-using azure::storage::storage_exception;
-using azure::storage::cloud_table;
-using azure::storage::cloud_table_client;
-using azure::storage::edm_type;
-using azure::storage::entity_property;
-using azure::storage::table_entity;
-using azure::storage::table_operation;
-using azure::storage::table_request_options;
-using azure::storage::table_result;
-using azure::storage::table_shared_access_policy;
-using azure::storage::table_query;
-using azure::storage::table_query_iterator;
-using azure::storage::table_result;
-
+/*
+ using azure::storage::storage_exception;
+ using azure::storage::cloud_table;
+ using azure::storage::cloud_table_client;
+ using azure::storage::edm_type;
+ using azure::storage::entity_property;
+ using azure::storage::table_entity;
+ using azure::storage::table_operation;
+ using azure::storage::table_request_options;
+ using azure::storage::table_result;
+ using azure::storage::table_shared_access_policy;
+ using azure::storage::table_query;
+ using azure::storage::table_query_iterator;
+ using azure::storage::table_result;
+ */
 using std::cin;
 using std::cout;
 using std::endl;
@@ -43,6 +45,9 @@ using std::pair;
 using std::string;
 using std::unordered_map;
 using std::vector;
+using std::tuple;
+using std::get;
+using std::make_tuple;
 
 using web::http::http_headers;
 using web::http::http_request;
@@ -57,6 +62,7 @@ using web::http::experimental::listener::http_listener;
 
 using prop_str_vals_t = vector<pair<string,string>>;
 
+
 constexpr const char* def_url = "http://localhost:34572";
 
 const string auth_table_name {"AuthTable"};
@@ -68,6 +74,7 @@ const string data_table_name {"DataTable"};
 
 const string get_read_token_op {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
+const string get_update_data_op {"GetUpdateData"};
 const string create_table_op {"CreateTableAdmin"};
 const string delete_table_op {"DeleteTableAdmin"};
 
@@ -77,36 +84,39 @@ const string delete_entity_admin {"DeleteEntityAdmin"};
 
 const string read_entity_auth {"ReadEntityAuth"};
 const string update_entity_auth {"UpdateEntityAuth"};
+const string push_status {"PushStatus"};
 
 
 //Address Declarations
 static constexpr const char* addr {"http://localhost:34568/"};
 static constexpr const char* auth_addr {"http://localhost:34570/"};
+static constexpr const char* push_addr {"http://localhost:34574/"};
+
 //End Address Declarations
 
 
 //Cache of opened tables
- 
-TableCache table_cache {};
+
+//TableCache table_cache {};
 
 /*
  Convert properties represented in Azure Storage type
  to prop_str_vals_t type.
+ 
+ prop_str_vals_t get_string_properties (const table_entity::properties_type& properties) {
+ prop_str_vals_t values {};
+ for (const auto v : properties) {
+ if (v.second.property_type() == edm_type::string) {
+ values.push_back(make_pair(v.first,v.second.string_value()));
+ }
+ else {
+ // Force the value as string in any case
+ values.push_back(make_pair(v.first, v.second.str()));
+ }
+ }
+ return values;
+ }
  */
-prop_str_vals_t get_string_properties (const table_entity::properties_type& properties) {
-    prop_str_vals_t values {};
-    for (const auto v : properties) {
-        if (v.second.property_type() == edm_type::string) {
-            values.push_back(make_pair(v.first,v.second.string_value()));
-        }
-        else {
-            // Force the value as string in any case
-            values.push_back(make_pair(v.first, v.second.str()));
-        }
-    }
-    return values;
-}
-
 value build_json_object (const vector<pair<string,string>>& properties) {
     value result {value::object ()};
     for (auto& prop : properties) {
@@ -166,41 +176,44 @@ unordered_map<string,string> get_json_body(http_request message) {
  table_shared_access_policy::permissions::read |
  table_shared_access_policy::permissions::update
  */
-pair<status_code,string> do_get_token (const cloud_table& data_table,
-                                       const string& partition,
-                                       const string& row,
-                                       uint8_t permissions) {
-    
-    utility::datetime exptime {utility::datetime::utc_now() + utility::datetime::from_days(1)};
-    try {
-        string limited_access_token {
-            data_table.get_shared_access_signature(table_shared_access_policy {
-                exptime,
-                permissions},
-                                                   string(), // Unnamed policy
-                                                   // Start of range (inclusive)
-                                                   partition,
-                                                   row,
-                                                   // End of range (inclusive)
-                                                   partition,
-                                                   row)
-            // Following token allows read access to entire table
-            //table.get_shared_access_signature(table_shared_access_policy {exptime, permissions})
-        };
-        cout << "Token " << limited_access_token << endl;
-        return make_pair(status_codes::OK, limited_access_token);
-    }
-    catch (const storage_exception& e) {
-        cout << "Azure Table Storage error: " << e.what() << endl;
-        cout << e.result().extended_error().message() << endl;
-        return make_pair(status_codes::InternalError, string{});
-    }
-}
-
+/*
+ pair<status_code,string> do_get_token (const cloud_table& data_table,
+ const string& partition,
+ const string& row,
+ uint8_t permissions) {
+ 
+ utility::datetime exptime {utility::datetime::utc_now() + utility::datetime::from_days(1)};
+ try {
+ string limited_access_token {
+ data_table.get_shared_access_signature(table_shared_access_policy {
+ exptime,
+ permissions},
+ string(), // Unnamed policy
+ // Start of range (inclusive)
+ partition,
+ row,
+ // End of range (inclusive)
+ partition,
+ row)
+ // Following token allows read access to entire table
+ //table.get_shared_access_signature(table_shared_access_policy {exptime, permissions})
+ };
+ cout << "Token " << limited_access_token << endl;
+ return make_pair(status_codes::OK, limited_access_token);
+ }
+ catch (const storage_exception& e) {
+ cout << "Azure Table Storage error: " << e.what() << endl;
+ cout << e.result().extended_error().message() << endl;
+ return make_pair(status_codes::InternalError, string{});
+ }
+ }
+ 
+ */
 //Initialize Unordered_Map ===================
 
-    unordered_map<string,string> SignedOn;
-    unordered_map<string,string>::iterator it;
+unordered_map<string, tuple<string,string,string>> SignedOn;
+unordered_map<string, tuple<string,string,string>>::iterator it;
+
 
 
 //End initialize Unordered_Map ================
@@ -214,6 +227,10 @@ void handle_get(http_request message) {
     cout << endl << "**** AuthServer GET " << path << endl;
     auto paths = uri::split_path(path);
     unordered_map<string,string> json_body {get_json_body(message)};
+    
+    //User Data from tuple
+    tuple<string,string,string> user_data = SignedOn[paths[1]];
+    
     
     // Need at least an operation and userid
     if (paths.size() < 2) {
@@ -239,8 +256,8 @@ void handle_get(http_request message) {
         }
     }
     
-    cloud_table table {table_cache.lookup_table("AuthTable")};
-    cloud_table data_table {table_cache.lookup_table("DataTable")};
+    //    cloud_table table {table_cache.lookup_table("AuthTable")};
+    //    cloud_table data_table {table_cache.lookup_table("DataTable")};
     
     
     // // //UserID does not exist/wrong userID gives error 404
@@ -258,21 +275,24 @@ void handle_get(http_request message) {
         }
     }
     
-    //MASIH KURANG - BELOM PARSE FRIEND LIST
+    
     if (paths[0] == "ReadFriendList") {
         if (!signed_in) {
             message.reply(status_codes::Forbidden);
             return;
         }
         else{
-            pair<status_code, value> result = do_request(methods::GET, addr + paths[1] + "/" + "*");
-            if (result.first == status_codes::OK) {
-                message.reply(status_codes::OK);
-                return;
-            }
+            auto user_entity = do_request(methods::GET, addr + read_entity_auth + "/"+"DataTable"+"/"+ get<0>(user_data) + "/" + get<1>(user_data) + "/" + get<2>(user_data));
+            auto entity_map = unpack_json_object(user_entity.second);
+            string friends_list = entity_map["Friends"];
+            value FriendList = build_json_value("Friends",friends_list);
+            message.reply(status_codes::OK,FriendList);
+            return;
+            
         }
-
+        
     }
+    
     
     
 }
@@ -285,29 +305,40 @@ void handle_post(http_request message) {
     cout << endl << "**** POST " << path << endl;
     auto paths = uri::split_path(path);
     
+    //User Data from tuple
+    tuple<string,string,string> user_data = SignedOn[paths[1]];
+    
     string userid = paths[1];
     unordered_map<string,string> json_body {get_json_body(message)};
     string pass {};
+    string prop {};
     
     
     for(const auto v:json_body){
         if(v.first=="Password"){
+            
             pass = v.second;
+            prop = v.first;
         }
         else{
             message.reply(status_codes::BadRequest);
-            cout << "There is no password" << endl;
+            cout << "There is no password" << endl; //Debug
             return;
         }
     }
+    cout << prop << ": " << pass << endl;   //Debug
     
-   
+    
     if (paths[0] == "SignOn") {
-        
-        vector<pair<string,string>> password = make_pair("Password",pass);
+        cout << "Entering SignOn" << endl;  //Debug
+        pair<string,string> pswd = make_pair(prop,pass);
+        cout << "User ID is: " << paths[1] << pswd.first << ": " << pswd.second << endl;  //Debug
+        value password = build_json_value(pswd);
         auto status = do_request(methods::GET, auth_addr + get_update_token_op + "/" + paths[1],password);
+        cout << "Status Code: " << status.first << endl;    //Debug
         if (status.first == status_codes::OK) {
-            pair<string,string> client = make_pair(userid,status.second);
+            auto update_data = unpack_json_object(status.second);
+            pair<string,tuple<string,string,string>> client = make_pair(userid,make_tuple(update_data["token"],update_data["DataPartition"],update_data["DataRow"]));
             SignedOn.insert(client); //Insert the userid & token into SignedOn status
             message.reply(status_codes::OK,status.second);
             return;
@@ -315,6 +346,7 @@ void handle_post(http_request message) {
     }
     
     if (paths[0] == "SignOff") {
+        cout << "Entering SignOff" << endl; //Debug
         for (SignedOn.begin(); it!=SignedOn.end(); it++){
             if (it->first == paths[1]) {
                 SignedOn.erase(paths[1]);   //Erase the userid and token from SignedOn status
@@ -326,8 +358,8 @@ void handle_post(http_request message) {
         return;
     }
 }
-    
-    
+
+
 
 
 /*
@@ -338,6 +370,9 @@ void handle_put(http_request message) {
     cout << endl << "**** PUT " << path << endl;
     auto paths = uri::split_path(path);
     
+    //User Data from tuple
+    tuple<string,string,string> user_data = SignedOn[paths[1]];
+    
     bool signed_in = false;             //set signed_in status for user as false
     for (SignedOn.begin(); it!=SignedOn.end(); it++) {
         if (it->first == paths[1]) {    //if user is found in the map, set as true
@@ -346,10 +381,11 @@ void handle_put(http_request message) {
     }
     
     //GET THE FRIEND LIST
-    auto user_entity = do_request(methods::GET, addr + read_entity_auth + "/"+"DataTable"+"/"+ SignOn[paths1] + "/" + paths[1] + "/" + paths[2]);
-    auto entity_map = unpack_json_object(user_enitty.second);
+    auto user_entity = do_request(methods::GET, addr + read_entity_auth + "/"+"DataTable"+"/"+ get<0>(user_data) + "/" + paths[1] + "/" + paths[2]);
+    auto entity_map = unpack_json_object(user_entity.second);
     string friends_list = entity_map["Friends"];
-    friends_list_t friends_list_parsed = parse_friends_list(const string& friends_list) //parse the friends list from previous line, returns
+    friends_list_t friends_list_parsed = parse_friends_list(friends_list); //parse the friends list from previous line, returns vector of pairs
+    ////////////
     
     
     if (paths[0] == "AddFriend") {  //method for adding a friend
@@ -358,7 +394,23 @@ void handle_put(http_request message) {
             return;
         }
         else{
-            pair<string,string> friends = make_pair(
+            //check if friend already exists in the list, if it is return status code ok
+            for (auto const& v: friends_list_parsed) {
+                if (v.first == paths[1] && v.second == paths[2]) {
+                    message.reply(status_codes::OK);
+                    cout << "The person exists in the table" << endl;
+                    return;
+                }
+            }
+            //Add the friend into friend list if he/she does not exist in the list
+            pair<string,string> friend_to_be_added = make_pair(paths[1],paths[2]);
+            friends_list_parsed.push_back(friend_to_be_added);
+            string new_string_of_friends = friends_list_to_string (friends_list_parsed); //friend list string
+            auto new_friend_list = do_request(methods::GET, addr + update_entity_auth + "/"+"DataTable"+"/"+ get<0>(user_data) + "/" + paths[1] + "/" + paths[2],build_json_value("Friends",new_string_of_friends));
+            if (new_friend_list.first == status_codes::OK) {
+                message.reply(status_codes::OK);
+                return;
+            }
             
         }
         
@@ -373,14 +425,28 @@ void handle_put(http_request message) {
             return;
         }
         else{
-            pair<status_code, value> result = do_request(methods::DEL, addr + update_entity_auth +"/"+"DataTable"+"/"+paths[1]+paths[2]);
-            if (result.first == status_codes::OK) {
-                message.reply(status_codes::OK);
-                return;
+            //check if friend already exists in the list, if he/she is remove the friend
+            for (auto v = friends_list_parsed.begin(); v != friends_list_parsed.end(); v++) {
+                if (v->first == paths[2] && v->second == paths[3]) {
+                    string friend_to_be_deleted = paths[1];
+                    friends_list_parsed.erase(v); //removing the friend
+                    string new_string_of_friends = friends_list_to_string(friends_list_parsed);
+                    auto new_friend_list = do_request(methods::GET, addr + update_entity_auth + "/"+"DataTable"+"/"+ get<0>(user_data) + "/" + paths[1] + "/" + paths[2],build_json_value("Friends",new_string_of_friends));
+                    if (new_friend_list.first == status_codes::OK) {
+                        message.reply(status_codes::OK);
+                        return;
+                    }
+                }
+                
             }
+            //Friend does not exist in the friend list, return OK
+            cout << "The person does not exist in your list" << endl;
+            message.reply(status_codes::OK);
+            return;
         }
         
     }
+    
     
     if (paths[0] == "UpdateStatus") {  //method for updating status
         if (!signed_in) {
@@ -388,11 +454,9 @@ void handle_put(http_request message) {
             return;
         }
         else{
-            pair<status_code, value> result = do_request(methods::PUT, addr + update_entity_auth+"/"+"DataTable"+"/"+SignedOn[paths[1]]+"/"+paths[1]+"/"+paths[2]);
-            if (result.first == status_codes::OK) {
-                message.reply(status_codes::OK);
-                return;
-            }
+            string string_of_friends = friends_list_to_string(friends_list_parsed);
+            pair<status_code, value> result = do_request(methods::POST, push_addr + push_status +"/"+get<1>(user_data)+"/"+get<2>(user_data)+"/"+paths[2]);
+            
         }
     }
     
